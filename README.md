@@ -1,1 +1,5 @@
 # pinjamkarya
+
+mufaddhol
+aflah
+balqis
