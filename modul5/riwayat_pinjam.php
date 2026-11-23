@@ -102,7 +102,7 @@ require_once ROOT_PATH . '/includes/header.php';
                             </button>
                         </form>
                     <?php elseif ($row['status_peminjaman'] === 'Dipinjam'): ?>
-                        <div class="pk-badge pk-badge--primary w-100 justify-center" style="min-height:42px;">
+                        <div class="pk-badge pk-badge--primary w-100 justify-center" style="min-height:36px;">
                             Kembalikan maks. <?= e(format_tanggal($row['tgl_selesai'])) ?>
                         </div>
                     <?php endif; ?>

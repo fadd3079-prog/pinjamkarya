@@ -22,4 +22,5 @@ if (!defined('UPLOAD_TIKET_PATH')) {
 }
 
 require_once ROOT_PATH . '/config/database.php';
+require_once ROOT_PATH . '/config/google.php';
 require_once ROOT_PATH . '/includes/functions.php';

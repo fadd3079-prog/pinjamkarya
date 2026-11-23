@@ -14,31 +14,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($id_kategori <= 0 || $nama_barang === '' || $deskripsi_kerusakan === '') {
         set_flash('warning', 'Kategori, nama barang, dan keluhan kerusakan wajib diisi.');
     } else {
-        $foto_filename = 'default_tiket.jpg';
-        $upload_ok = true;
+        $kontak_res = lengkapi_kontak_user($conn, $_SESSION['user'], $_POST);
+        if (!$kontak_res['ok']) {
+            set_flash('warning', $kontak_res['message']);
+        } else {
+            $foto_filename = 'default_tiket.jpg';
+            $upload_ok = true;
 
-        if (isset($_FILES['foto_barang']) && $_FILES['foto_barang']['error'] !== UPLOAD_ERR_NO_FILE) {
-            $up = upload_gambar($_FILES['foto_barang'], UPLOAD_TIKET_PATH, 'tiket_');
-            if (!$up['success']) {
-                set_flash('danger', $up['message']);
-                $upload_ok = false;
-            } else {
-                $foto_filename = $up['filename'];
+            if (isset($_FILES['foto_barang']) && $_FILES['foto_barang']['error'] !== UPLOAD_ERR_NO_FILE) {
+                $up = upload_gambar($_FILES['foto_barang'], UPLOAD_TIKET_PATH, 'tiket_');
+                if (!$up['success']) {
+                    set_flash('danger', $up['message']);
+                    $upload_ok = false;
+                } else {
+                    $foto_filename = $up['filename'];
+                }
             }
-        }
 
-        if ($upload_ok) {
-            $kode_tiket = generate_kode_tiket($conn);
-            $status_awal = 'Menunggu Diagnosis';
+            if ($upload_ok) {
+                $kode_tiket = generate_kode_tiket($conn);
+                $status_awal = 'Menunggu Diagnosis';
 
-            $stmt = mysqli_prepare($conn, 'INSERT INTO tiket_perbaikan (kode_tiket, id_pelapor, id_kategori, id_teknisi, nama_barang, deskripsi_kerusakan, foto_barang, metode_cek, status_tiket) VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?)');
-            mysqli_stmt_bind_param($stmt, 'siisssss', $kode_tiket, $id_pelapor, $id_kategori, $nama_barang, $deskripsi_kerusakan, $foto_filename, $metode_cek, $status_awal);
-            mysqli_stmt_execute($stmt);
-            mysqli_stmt_close($stmt);
+                $stmt = mysqli_prepare($conn, 'INSERT INTO tiket_perbaikan (kode_tiket, id_pelapor, id_kategori, id_teknisi, nama_barang, deskripsi_kerusakan, foto_barang, metode_cek, status_tiket) VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?)');
+                mysqli_stmt_bind_param($stmt, 'siisssss', $kode_tiket, $id_pelapor, $id_kategori, $nama_barang, $deskripsi_kerusakan, $foto_filename, $metode_cek, $status_awal);
+                mysqli_stmt_execute($stmt);
+                mysqli_stmt_close($stmt);
 
-            set_flash('success', 'Tiket perbaikan diterbitkan: ' . $kode_tiket . '.');
-            header('Location: ' . BASE_URL . '/modul8/tiket_saya.php');
-            exit;
+                set_flash('success', 'Tiket perbaikan diterbitkan: ' . $kode_tiket . '.');
+                header('Location: ' . BASE_URL . '/modul8/tiket_saya.php');
+                exit;
+            }
         }
     }
 }
@@ -57,7 +62,7 @@ require_once ROOT_PATH . '/includes/header.php';
     </a>
 </div>
 
-<div style="max-width: 680px;">
+<div class="pk-form-wrap">
     <section class="pk-card" aria-labelledby="form-tiket-heading">
         <div class="pk-card-header">
             <h2 id="form-tiket-heading" class="pk-card-title">
@@ -103,6 +108,8 @@ require_once ROOT_PATH . '/includes/header.php';
                 <label for="foto_barang" class="form-label">Foto Barang (Opsional, maks. 2 MB)</label>
                 <input type="file" id="foto_barang" name="foto_barang" class="form-control" accept=".jpg,.jpeg,.png,.webp">
             </div>
+
+            <?= render_kontak_fields_if_needed($_SESSION['user'], $_POST) ?>
 
             <button type="submit" class="btn btn-warm w-100">
                 <?= svg_icon('check-circle', 16) ?>

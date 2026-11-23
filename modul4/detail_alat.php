@@ -53,6 +53,8 @@ if ($tgl_mulai_q !== '' && $tgl_selesai_q !== '') {
 }
 
 $page_title = $alat['nama_alat'];
+$public_layout = true;
+$public_nav_active = 'katalog';
 require_once ROOT_PATH . '/includes/header.php';
 ?>
 
@@ -64,7 +66,7 @@ require_once ROOT_PATH . '/includes/header.php';
 <div class="pk-grid pk-grid--2">
     <div>
         <section class="pk-card" aria-labelledby="spesifikasi-heading">
-            <div class="pk-tool-media mb-3" style="border-radius: 10px; border: 1px solid var(--pk-border);">
+            <div class="pk-tool-media pk-tool-media--framed mb-3">
                 <img src="<?= e(get_gambar_alat($alat['foto_alat'], $alat['nama_alat'])) ?>"
                      alt="<?= e($alat['nama_alat']) ?>"
                      width="640"

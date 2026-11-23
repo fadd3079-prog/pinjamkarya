@@ -85,7 +85,6 @@ require_once ROOT_PATH . '/includes/header.php';
 
 <div class="pk-page-header">
     <h1>Master Kategori</h1>
-    <a href="<?= BASE_URL ?>/modul2/panduan.php" class="btn btn-outline">Halaman Panduan</a>
 </div>
 
 <div class="pk-grid pk-grid--2">

@@ -1,0 +1,13 @@
+# Local secrets and environment
+config/google.local.php
+.env
+.env.*
+!.env.example
+
+# Editor and OS
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.vscode/
+.idea/

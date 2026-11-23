@@ -2,7 +2,7 @@
 require_once dirname(__DIR__) . '/config/app.php';
 
 if (isset($_SESSION['user'])) {
-    header('Location: ' . BASE_URL . '/modul4/katalog.php');
+    header('Location: ' . BASE_URL . '/modul9/dashboard.php');
     exit;
 }
 
@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
     $no_hp = trim($_POST['no_hp'] ?? '');
-    $alamat = trim($_POST['alamat'] ?? '');
+    $alamat = '-';
     $role = ($_POST['role'] ?? 'warga') === 'mitra' ? 'mitra' : 'warga';
 
     $is_kontributor = ($role === 'mitra' && !empty($_POST['is_kontributor'])) ? 1 : 0;
@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $is_verified_teknisi = 0;
     $skor_kredibilitas = 100;
 
-    if ($nama === '' || $email === '' || $password === '' || $no_hp === '' || $alamat === '') {
+    if ($nama === '' || $email === '' || $password === '' || $no_hp === '') {
         set_flash('warning', 'Seluruh kolom formulir pendaftaran wajib diisi.');
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         set_flash('warning', 'Format alamat email tidak sah.');
@@ -52,78 +52,79 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $page_title = 'Daftar Akun';
+$minimal_layout = true;
 require_once ROOT_PATH . '/includes/header.php';
 ?>
 
-<div style="max-width: 600px; margin: 12px auto;">
-    <section class="pk-card" aria-labelledby="register-heading">
-        <div class="pk-card-header">
-            <h1 id="register-heading" class="pk-card-title">
-                <?= svg_icon('user', 20) ?>
-                <span>Daftar Akun</span>
-            </h1>
+<section class="pk-login pk-login--wide" aria-labelledby="register-heading">
+    <header class="pk-login-head">
+        <a class="pk-login-brand" href="<?= BASE_URL ?>/index.php">
+            <span class="pk-login-brand-icon"><?= brand_logo('light', 16) ?></span>
+            <span>PinjamKarya</span>
+            <span class="pk-login-sep" aria-hidden="true">/</span>
+            <span class="pk-login-scope">Daftar</span>
+        </a>
+        <h1 id="register-heading" class="pk-login-title">Daftar Akun</h1>
+    </header>
+
+    <?= get_flash() ?>
+
+    <form method="post" action="<?= BASE_URL ?>/modul1/register.php">
+        <div class="form-group">
+            <label for="nama" class="form-label">Nama Lengkap</label>
+            <input type="text" id="nama" name="nama" class="form-control" placeholder="Nama lengkap" value="<?= e($_POST['nama'] ?? '') ?>" required autofocus>
         </div>
 
-        <form method="post" action="<?= BASE_URL ?>/modul1/register.php">
+        <div class="pk-grid pk-grid--2">
             <div class="form-group">
-                <label for="nama" class="form-label">Nama Lengkap</label>
-                <input type="text" id="nama" name="nama" class="form-control" placeholder="Nama lengkap" value="<?= e($_POST['nama'] ?? '') ?>" required>
-            </div>
-
-            <div class="pk-grid pk-grid--2">
-                <div class="form-group">
-                    <label for="email" class="form-label">Email</label>
-                    <input type="email" id="email" name="email" class="form-control" placeholder="nama@email.com" value="<?= e($_POST['email'] ?? '') ?>" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="no_hp" class="form-label">No. Telepon / WhatsApp</label>
-                    <input type="text" id="no_hp" name="no_hp" class="form-control" placeholder="0812xxxxxxxx" value="<?= e($_POST['no_hp'] ?? '') ?>" required>
-                </div>
+                <label for="email" class="form-label">Email</label>
+                <input type="email" id="email" name="email" class="form-control" placeholder="nama@email.com" value="<?= e($_POST['email'] ?? '') ?>" required>
             </div>
 
             <div class="form-group">
-                <label for="password" class="form-label">Kata Sandi</label>
-                <input type="password" id="password" name="password" class="form-control" placeholder="Minimal 6 karakter" required>
+                <label for="no_hp" class="form-label">No. Telepon / WhatsApp</label>
+                <input type="text" id="no_hp" name="no_hp" class="form-control" placeholder="0812xxxxxxxx" value="<?= e($_POST['no_hp'] ?? '') ?>" required>
             </div>
-
-            <div class="form-group">
-                <label for="alamat" class="form-label">Alamat</label>
-                <textarea id="alamat" name="alamat" class="form-control" placeholder="Alamat domisili atau lokasi usaha" required><?= e($_POST['alamat'] ?? '') ?></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="roleSelect" class="form-label">Peran Keanggotaan</label>
-                <select id="roleSelect" name="role" class="form-select">
-                    <option value="warga" <?= (($_POST['role'] ?? 'warga') === 'warga') ? 'selected' : '' ?>>Warga / UMKM (Peminjam Alat &amp; Pengguna Servis)</option>
-                    <option value="mitra" <?= (($_POST['role'] ?? '') === 'mitra') ? 'selected' : '' ?>>Mitra Komunitas (Kontributor Alat / Teknisi)</option>
-                </select>
-            </div>
-
-            <div id="mitraSubroleBox" class="form-group" style="display: none;">
-                <div class="form-check">
-                    <input type="checkbox" id="is_kontributor" name="is_kontributor" value="1" class="form-check-input" <?= !empty($_POST['is_kontributor']) ? 'checked' : '' ?>>
-                    <label for="is_kontributor" class="form-check-label">Mitra Kontributor Alat</label>
-                </div>
-                <div class="form-check mb-0">
-                    <input type="checkbox" id="is_teknisi" name="is_teknisi" value="1" class="form-check-input" <?= !empty($_POST['is_teknisi']) ? 'checked' : '' ?>>
-                    <label for="is_teknisi" class="form-check-label">Mitra Teknisi Perbaikan</label>
-                </div>
-            </div>
-
-            <div class="btn-group-wrap mt-3">
-                <button type="submit" class="btn btn-primary w-100">
-                    <?= svg_icon('check-circle', 16) ?>
-                    <span>Buat Akun</span>
-                </button>
-            </div>
-        </form>
-
-        <div class="mt-3 text-center">
-            <span class="text-muted">Sudah punya akun?</span>
-            <a href="<?= BASE_URL ?>/modul1/login.php" class="fw-bold">Masuk</a>
         </div>
-    </section>
-</div>
+
+        <div class="form-group">
+            <label for="password" class="form-label">Kata Sandi</label>
+            <input type="password" id="password" name="password" class="form-control" placeholder="Minimal 6 karakter" required>
+        </div>
+
+        <div class="form-group">
+            <label for="roleSelect" class="form-label">Peran Keanggotaan</label>
+            <select id="roleSelect" name="role" class="form-select">
+                <option value="warga" <?= (($_POST['role'] ?? 'warga') === 'warga') ? 'selected' : '' ?>>Warga / UMKM (Peminjam Alat &amp; Pengguna Servis)</option>
+                <option value="mitra" <?= (($_POST['role'] ?? '') === 'mitra') ? 'selected' : '' ?>>Mitra Komunitas (Kontributor Alat / Teknisi)</option>
+            </select>
+        </div>
+
+        <div id="mitraSubroleBox" class="form-group" style="display: none;">
+            <div class="form-check">
+                <input type="checkbox" id="is_kontributor" name="is_kontributor" value="1" class="form-check-input" <?= !empty($_POST['is_kontributor']) ? 'checked' : '' ?>>
+                <label for="is_kontributor" class="form-check-label">Mitra Kontributor Alat</label>
+            </div>
+            <div class="form-check mb-0">
+                <input type="checkbox" id="is_teknisi" name="is_teknisi" value="1" class="form-check-input" <?= !empty($_POST['is_teknisi']) ? 'checked' : '' ?>>
+                <label for="is_teknisi" class="form-check-label">Mitra Teknisi Perbaikan</label>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 mt-1">Buat Akun</button>
+    </form>
+
+    <div class="pk-auth-divider" aria-hidden="true"><span>atau</span></div>
+
+    <a href="<?= BASE_URL ?>/modul1/google_login.php?from=register" class="btn btn-outline btn-google">
+        <?= google_mark_svg(15) ?>
+        <span>Daftar dengan Google</span>
+    </a>
+
+    <footer class="pk-login-foot">
+        <a href="<?= BASE_URL ?>/modul1/login.php">Sudah punya akun? Masuk</a>
+        <a href="<?= BASE_URL ?>/index.php">Kembali ke beranda</a>
+    </footer>
+</section>
 
 <?php require_once ROOT_PATH . '/includes/footer.php'; ?>

@@ -1,12 +1,48 @@
 document.addEventListener('DOMContentLoaded', function () {
+  const siteHeader = document.getElementById('site-header');
+  const siteToggle = document.querySelector('.site-nav_toggle');
+  const siteMenu = document.getElementById('site-menu');
+
+  if (siteToggle && siteMenu) {
+    const setSiteNav = function (open) {
+      siteToggle.setAttribute('aria-expanded', String(open));
+      siteMenu.classList.toggle('is-open', open);
+      if (siteHeader) siteHeader.classList.toggle('is-menu-open', open);
+    };
+    siteToggle.addEventListener('click', function () {
+      setSiteNav(siteToggle.getAttribute('aria-expanded') !== 'true');
+    });
+    siteMenu.addEventListener('click', function (e) {
+      if (e.target.closest('a')) setSiteNav(false);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && siteMenu.classList.contains('is-open')) {
+        setSiteNav(false);
+        siteToggle.focus();
+      }
+    });
+    document.addEventListener('click', function (e) {
+      if (siteMenu.classList.contains('is-open') && !siteMenu.contains(e.target) && !siteToggle.contains(e.target)) {
+        setSiteNav(false);
+      }
+    });
+    window.addEventListener('resize', function () {
+      if (window.innerWidth > 767) setSiteNav(false);
+    });
+  }
+
+  if (siteHeader && siteHeader.classList.contains('site-nav--overlay')) {
+    const syncHeaderOverlay = function () {
+      siteHeader.classList.toggle('is-scrolled', window.scrollY > 12);
+    };
+    window.addEventListener('scroll', syncHeaderOverlay, { passive: true });
+    syncHeaderOverlay();
+  }
+
   const backdrop = document.getElementById('pkBackdrop');
   const sidebar = document.getElementById('pkSidebar');
   const sidebarToggle = document.getElementById('pkSidebarToggle');
   const sidebarClose = document.getElementById('pkSidebarClose');
-
-  const heroDrawer = document.getElementById('pkHeroDrawer');
-  const heroMenuBtn = document.getElementById('pkHeroMenuBtn');
-  const heroDrawerClose = document.getElementById('pkHeroDrawerClose');
 
   let lastFocusedTrigger = null;
 
@@ -14,11 +50,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (sidebar && sidebar.classList.contains('open')) {
       sidebar.classList.remove('open');
       if (sidebarToggle) sidebarToggle.setAttribute('aria-expanded', 'false');
-    }
-    if (heroDrawer && heroDrawer.classList.contains('open')) {
-      heroDrawer.classList.remove('open');
-      if (heroMenuBtn) heroMenuBtn.setAttribute('aria-expanded', 'false');
-      heroDrawer.setAttribute('aria-hidden', 'true');
     }
     document.querySelectorAll('.pk-modal.open').forEach(function (modal) {
       modal.classList.remove('open');
@@ -43,21 +74,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   if (sidebarClose) {
     sidebarClose.addEventListener('click', closeAllDrawers);
-  }
-
-  if (heroMenuBtn && heroDrawer) {
-    heroMenuBtn.addEventListener('click', function () {
-      lastFocusedTrigger = heroMenuBtn;
-      heroDrawer.classList.add('open');
-      heroDrawer.setAttribute('aria-hidden', 'false');
-      heroMenuBtn.setAttribute('aria-expanded', 'true');
-      if (backdrop) backdrop.classList.add('show');
-      if (heroDrawerClose) heroDrawerClose.focus();
-    });
-  }
-
-  if (heroDrawerClose) {
-    heroDrawerClose.addEventListener('click', closeAllDrawers);
   }
 
   if (backdrop) {
@@ -125,14 +141,24 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  document.querySelectorAll('[data-demo-email]').forEach(function (btn) {
+  const demoButtons = document.querySelectorAll('[data-demo-email]');
+  demoButtons.forEach(function (btn) {
     btn.addEventListener('click', function () {
       const emailInput = document.getElementById('email');
       const passInput = document.getElementById('password');
+      const submitBtn = document.getElementById('loginSubmitBtn');
+      demoButtons.forEach(function (item) {
+        item.classList.remove('is-selected');
+      });
+      btn.classList.add('is-selected');
       if (emailInput && passInput) {
         emailInput.value = btn.getAttribute('data-demo-email');
         passInput.value = btn.getAttribute('data-demo-pass') || 'password';
-        emailInput.focus();
+        if (submitBtn) {
+          submitBtn.focus();
+        } else {
+          emailInput.focus();
+        }
       }
     });
   });

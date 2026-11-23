@@ -162,7 +162,7 @@ require_once ROOT_PATH . '/includes/header.php';
                 <?php while ($p = mysqli_fetch_assoc($res_pending)): ?>
                     <tr>
                         <td style="width:88px;">
-                            <img src="<?= e(get_gambar_alat($p['foto_alat'], $p['nama_alat'])) ?>" alt="<?= e($p['nama_alat']) ?>" width="76" height="50" style="border-radius:6px; object-fit:cover;">
+                            <img src="<?= e(get_gambar_alat($p['foto_alat'], $p['nama_alat'])) ?>" alt="<?= e($p['nama_alat']) ?>" width="76" height="50" class="pk-thumb-table">
                         </td>
                         <td>
                             <strong><?= e($p['nama_alat']) ?></strong>
@@ -314,7 +314,7 @@ require_once ROOT_PATH . '/includes/header.php';
                 <?php while ($row = mysqli_fetch_assoc($res_all)): ?>
                     <tr>
                         <td style="width:88px;">
-                            <img src="<?= e(get_gambar_alat($row['foto_alat'], $row['nama_alat'])) ?>" alt="<?= e($row['nama_alat']) ?>" width="76" height="50" style="border-radius:6px; object-fit:cover;">
+                            <img src="<?= e(get_gambar_alat($row['foto_alat'], $row['nama_alat'])) ?>" alt="<?= e($row['nama_alat']) ?>" width="76" height="50" class="pk-thumb-table">
                         </td>
                         <td>
                             <strong><?= e($row['nama_alat']) ?></strong>

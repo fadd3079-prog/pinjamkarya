@@ -8,10 +8,15 @@ $id_kategori = (int)($_GET['id_kategori'] ?? 0);
 $tgl_mulai = trim($_GET['tgl_mulai'] ?? '');
 $tgl_selesai = trim($_GET['tgl_selesai'] ?? '');
 
-$res_kat = mysqli_query($conn, 'SELECT id_kategori, nama_kategori FROM kategori_alat ORDER BY nama_kategori ASC');
+$res_kat = mysqli_query($conn, "SELECT k.id_kategori, k.nama_kategori,
+    (SELECT COUNT(*) FROM aset_alat a WHERE a.id_kategori = k.id_kategori AND a.status_alat IN ('Tersedia', 'Dipinjam', 'Perawatan')) AS total_alat
+    FROM kategori_alat k
+    ORDER BY k.nama_kategori ASC");
 $kategori_list = [];
+$total_semua = 0;
 while ($k = mysqli_fetch_assoc($res_kat)) {
     $kategori_list[] = $k;
+    $total_semua += (int)$k['total_alat'];
 }
 
 $sql = "SELECT a.*, k.nama_kategori, u.nama AS nama_pemilik, u.role AS role_pemilik
@@ -63,59 +68,92 @@ if ($types !== '') {
 }
 mysqli_stmt_execute($stmt);
 $res_alat = mysqli_stmt_get_result($stmt);
+$jumlah_hasil = mysqli_num_rows($res_alat);
+
+function katalog_filter_url(array $overrides = []): string {
+    $query = [
+        'q'           => $_GET['q'] ?? '',
+        'id_kategori' => (int)($_GET['id_kategori'] ?? 0),
+        'tgl_mulai'   => $_GET['tgl_mulai'] ?? '',
+        'tgl_selesai' => $_GET['tgl_selesai'] ?? '',
+    ];
+    foreach ($overrides as $k => $v) {
+        $query[$k] = $v;
+    }
+    $clean = [];
+    foreach ($query as $k => $v) {
+        if ($v !== '' && $v !== 0) {
+            $clean[$k] = $v;
+        }
+    }
+    return BASE_URL . '/modul4/katalog.php' . (!empty($clean) ? '?' . http_build_query($clean) : '');
+}
 
 $page_title = 'Katalog Perkakas';
+$public_layout = true;
+$public_nav_active = 'katalog';
 require_once ROOT_PATH . '/includes/header.php';
 ?>
 
-<div class="pk-page-header">
-    <h1>Katalog Perkakas</h1>
-    <a href="<?= BASE_URL ?>/modul2/panduan.php" class="btn btn-outline">
-        <?= svg_icon('shield', 16) ?>
-        <span>Panduan Keselamatan</span>
-    </a>
+<div class="pk-archive-head">
+    <h1 class="pk-archive-title">Katalog.</h1>
+    <p class="pk-archive-count" aria-live="polite">
+        <strong><?= $jumlah_hasil ?></strong>
+        <span>unit</span>
+    </p>
 </div>
 
-<section class="pk-card mb-4" aria-label="Filter Katalog">
-    <form method="get" action="<?= BASE_URL ?>/modul4/katalog.php">
-        <div class="pk-grid pk-grid--4">
-            <div class="form-group mb-0">
-                <label for="q" class="form-label">Nama Alat</label>
-                <input type="text" id="q" name="q" class="form-control" placeholder="Cari bor, tangga, kursi roda..." value="<?= e($q) ?>">
-            </div>
-
-            <div class="form-group mb-0">
-                <label for="id_kategori" class="form-label">Kategori</label>
-                <select id="id_kategori" name="id_kategori" class="form-select">
-                    <option value="0">Semua Kategori</option>
-                    <?php foreach ($kategori_list as $kat): ?>
-                        <option value="<?= (int)$kat['id_kategori'] ?>" <?= $id_kategori === (int)$kat['id_kategori'] ? 'selected' : '' ?>>
-                            <?= e($kat['nama_kategori']) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="form-group mb-0">
-                <label for="tgl_mulai" class="form-label">Mulai Tanggal</label>
-                <input type="date" id="tgl_mulai" name="tgl_mulai" class="form-control" min="<?= date('Y-m-d') ?>" value="<?= e($tgl_mulai) ?>">
-            </div>
-
-            <div class="form-group mb-0">
-                <label for="tgl_selesai" class="form-label">Sampai Tanggal</label>
-                <input type="date" id="tgl_selesai" name="tgl_selesai" class="form-control" min="<?= date('Y-m-d') ?>" value="<?= e($tgl_selesai) ?>">
-            </div>
+<section class="pk-filters" aria-label="Filter Katalog">
+    <div class="pk-filters-row">
+        <div class="pk-pill-tabs" role="navigation" aria-label="Filter kategori">
+            <a href="<?= e(katalog_filter_url(['id_kategori' => 0])) ?>" class="pk-pill<?= $id_kategori === 0 ? ' is-active' : '' ?>">
+                <span>Semua</span>
+                <span class="pk-pill-count"><?= $total_semua ?></span>
+            </a>
+            <?php foreach ($kategori_list as $kat): ?>
+                <a href="<?= e(katalog_filter_url(['id_kategori' => (int)$kat['id_kategori']])) ?>" class="pk-pill<?= $id_kategori === (int)$kat['id_kategori'] ? ' is-active' : '' ?>">
+                    <span><?= e($kat['nama_kategori']) ?></span>
+                    <span class="pk-pill-count"><?= (int)$kat['total_alat'] ?></span>
+                </a>
+            <?php endforeach; ?>
         </div>
 
-        <div class="btn-group-wrap mt-3">
-            <button type="submit" class="btn btn-primary">
-                <?= svg_icon('search', 16) ?>
-                <span>Terapkan Filter</span>
-            </button>
-            <?php if ($q !== '' || $id_kategori > 0 || $filter_tanggal_aktif): ?>
-                <a href="<?= BASE_URL ?>/modul4/katalog.php" class="btn btn-muted">Reset</a>
+        <form method="get" action="<?= BASE_URL ?>/modul4/katalog.php" class="pk-search-wrap">
+            <?php if ($id_kategori > 0): ?>
+                <input type="hidden" name="id_kategori" value="<?= $id_kategori ?>">
             <?php endif; ?>
-        </div>
+            <?php if ($tgl_mulai !== ''): ?>
+                <input type="hidden" name="tgl_mulai" value="<?= e($tgl_mulai) ?>">
+            <?php endif; ?>
+            <?php if ($tgl_selesai !== ''): ?>
+                <input type="hidden" name="tgl_selesai" value="<?= e($tgl_selesai) ?>">
+            <?php endif; ?>
+            <div class="pk-search-field">
+                <span class="pk-search-icon"><?= svg_icon('search', 16) ?></span>
+                <label class="sr-only" for="q">Cari alat</label>
+                <input type="search" id="q" name="q" class="form-control" placeholder="Cari alat..." value="<?= e($q) ?>">
+            </div>
+            <button type="submit" class="btn btn-primary">Cari</button>
+        </form>
+    </div>
+
+    <form method="get" action="<?= BASE_URL ?>/modul4/katalog.php" class="pk-date-strip">
+        <?php if ($q !== ''): ?>
+            <input type="hidden" name="q" value="<?= e($q) ?>">
+        <?php endif; ?>
+        <?php if ($id_kategori > 0): ?>
+            <input type="hidden" name="id_kategori" value="<?= $id_kategori ?>">
+        <?php endif; ?>
+        <span class="pk-date-strip-label">Cek jadwal</span>
+        <label class="sr-only" for="tgl_mulai">Mulai Tanggal</label>
+        <input type="date" id="tgl_mulai" name="tgl_mulai" class="pk-date-chip" min="<?= date('Y-m-d') ?>" value="<?= e($tgl_mulai) ?>">
+        <span class="text-muted">-</span>
+        <label class="sr-only" for="tgl_selesai">Sampai Tanggal</label>
+        <input type="date" id="tgl_selesai" name="tgl_selesai" class="pk-date-chip" min="<?= date('Y-m-d') ?>" value="<?= e($tgl_selesai) ?>">
+        <button type="submit" class="btn btn-outline">Terapkan</button>
+        <?php if ($q !== '' || $id_kategori > 0 || $filter_tanggal_aktif): ?>
+            <a href="<?= BASE_URL ?>/modul4/katalog.php" class="btn btn-muted">Reset</a>
+        <?php endif; ?>
     </form>
 </section>
 
@@ -123,12 +161,12 @@ require_once ROOT_PATH . '/includes/header.php';
     <div class="pk-alert pk-alert--info">
         <div class="d-flex align-center gap-2">
             <?= svg_icon('calendar', 18) ?>
-            <span>Tersedia pada <strong><?= e(format_tanggal($tgl_mulai)) ?></strong> - <strong><?= e(format_tanggal($tgl_selesai)) ?></strong>.</span>
+            <span>Menampilkan alat tersedia pada <strong><?= e(format_tanggal($tgl_mulai)) ?></strong> - <strong><?= e(format_tanggal($tgl_selesai)) ?></strong>.</span>
         </div>
     </div>
 <?php endif; ?>
 
-<?php if (mysqli_num_rows($res_alat) === 0): ?>
+<?php if ($jumlah_hasil === 0): ?>
     <div class="pk-empty-state">
         <div class="pk-empty-icon"><?= svg_icon('box', 22) ?></div>
         <h3>Tidak Ada Perkakas</h3>
@@ -145,59 +183,7 @@ require_once ROOT_PATH . '/includes/header.php';
                 $detail_url .= '&tgl_mulai=' . rawurlencode($tgl_mulai) . '&tgl_selesai=' . rawurlencode($tgl_selesai);
             }
             ?>
-            <article class="pk-tool-card">
-                <div class="pk-tool-media">
-                    <img src="<?= e(get_gambar_alat($alat['foto_alat'], $alat['nama_alat'])) ?>"
-                         alt="<?= e($alat['nama_alat']) ?>"
-                         width="640"
-                         height="400"
-                         loading="lazy">
-                    <div class="pk-tool-badges">
-                        <span class="pk-badge pk-badge--primary"><?= e($alat['nama_kategori']) ?></span>
-                        <?= badge_status_alat($alat['status_alat']) ?>
-                    </div>
-                </div>
-
-                <div class="pk-tool-body">
-                    <h2 class="pk-tool-title"><?= e($alat['nama_alat']) ?></h2>
-                    <p class="pk-tool-desc"><?= e($alat['deskripsi']) ?></p>
-
-                    <ul class="pk-tool-meta">
-                        <li>
-                            <span>Maks. Pinjam</span>
-                            <strong><?= (int)$alat['max_hari_pinjam'] ?> Hari</strong>
-                        </li>
-                        <li>
-                            <span>Skor Minimal</span>
-                            <strong><?= (int)$alat['min_skor'] ?> Poin</strong>
-                        </li>
-                        <li>
-                            <span>Biaya Rawat</span>
-                            <?php if ((float)$alat['biaya_perawatan'] <= 0): ?>
-                                <strong class="text-secondary">Gratis</strong>
-                            <?php else: ?>
-                                <strong><?= rupiah($alat['biaya_perawatan']) ?></strong>
-                            <?php endif; ?>
-                        </li>
-                        <li>
-                            <span>Harga Baru</span>
-                            <strong><?= rupiah($alat['harga_beli_baru']) ?></strong>
-                        </li>
-                    </ul>
-
-                    <?php if ($alat['status_alat'] === 'Perawatan'): ?>
-                        <a href="<?= e($detail_url) ?>" class="btn btn-muted w-100">
-                            <?= svg_icon('wrench', 16) ?>
-                            <span>Dalam Perawatan</span>
-                        </a>
-                    <?php else: ?>
-                        <a href="<?= e($detail_url) ?>" class="btn btn-primary w-100">
-                            <?= svg_icon('calendar', 16) ?>
-                            <span>Detail &amp; Pinjam</span>
-                        </a>
-                    <?php endif; ?>
-                </div>
-            </article>
+            <?= render_tool_card($alat, $detail_url, 'h2') ?>
         <?php endwhile; ?>
     </div>
 <?php endif; ?>

@@ -172,12 +172,12 @@ require_once ROOT_PATH . '/includes/header.php';
 
                 <div class="form-group">
                     <label for="no_hp" class="form-label">No. Telepon / WhatsApp</label>
-                    <input type="text" id="no_hp" name="no_hp" class="form-control" value="<?= e($user['no_hp']) ?>" required>
+                    <input type="text" id="no_hp" name="no_hp" class="form-control" placeholder="0812xxxxxxxx" value="<?= is_kontak_kosong($user['no_hp'] ?? '') ? '' : e($user['no_hp']) ?>" required>
                 </div>
 
                 <div class="form-group">
                     <label for="alamat" class="form-label">Alamat</label>
-                    <textarea id="alamat" name="alamat" class="form-control" required><?= e($user['alamat']) ?></textarea>
+                    <textarea id="alamat" name="alamat" class="form-control" placeholder="Alamat domisili atau lokasi usaha" required><?= is_kontak_kosong($user['alamat'] ?? '') ? '' : e($user['alamat']) ?></textarea>
                 </div>
 
                 <div class="form-group">

@@ -162,7 +162,7 @@ require_once ROOT_PATH . '/includes/header.php';
                          alt="<?= e($t['nama_barang']) ?>"
                          width="120"
                          height="84"
-                         style="border-radius:8px; object-fit:cover; border:1px solid var(--pk-border); flex-shrink:0;">
+                         class="pk-thumb-ticket">
                     <div>
                         <h2 class="mb-1"><?= e($t['nama_barang']) ?></h2>
                         <div class="text-muted mb-2"><?= e($t['deskripsi_kerusakan']) ?></div>

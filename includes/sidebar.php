@@ -20,21 +20,15 @@ function is_nav_active(string $needle, string $current): string {
             <div class="pk-nav-group">
                 <ul class="pk-nav-list">
                     <li>
+                        <a href="<?= BASE_URL . ($user ? '/modul9/dashboard.php' : '/index.php') ?>" class="pk-nav-link <?= is_nav_active('modul9/dashboard.php', $script_path) ?>">
+                            <?= svg_icon('home', 18) ?>
+                            <span>Home</span>
+                        </a>
+                    </li>
+                    <li>
                         <a href="<?= BASE_URL ?>/modul4/katalog.php" class="pk-nav-link <?= is_nav_active('modul4/', $script_path) ?>">
                             <?= svg_icon('grid', 18) ?>
-                            <span>Katalog Perkakas</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="<?= BASE_URL ?>/modul2/panduan.php" class="pk-nav-link <?= is_nav_active('modul2/panduan.php', $script_path) ?>">
-                            <?= svg_icon('shield', 18) ?>
-                            <span>Panduan Keselamatan</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="<?= BASE_URL ?>/modul9/dashboard.php" class="pk-nav-link <?= is_nav_active('modul9/dashboard.php', $script_path) ?>">
-                            <?= svg_icon('bar-chart', 18) ?>
-                            <span>Dashboard Dampak</span>
+                            <span>Katalog</span>
                         </a>
                     </li>
                 </ul>

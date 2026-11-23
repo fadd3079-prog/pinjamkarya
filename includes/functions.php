@@ -70,7 +70,7 @@ function require_role(array $allowed_roles): void {
     $user_role = $_SESSION['user']['role'] ?? '';
     if (!in_array($user_role, $allowed_roles, true)) {
         set_flash('danger', 'Akses ditolak untuk peran akun Anda.');
-        header('Location: ' . BASE_URL . '/modul4/katalog.php');
+        header('Location: ' . BASE_URL . '/modul9/dashboard.php');
         exit;
     }
 }
@@ -88,6 +88,68 @@ function refresh_user_session(mysqli $conn): void {
         $_SESSION['user'] = $row;
     }
     mysqli_stmt_close($stmt);
+}
+
+function is_kontak_kosong(?string $val): bool {
+    $trimmed = trim((string)$val);
+    return $trimmed === '' || $trimmed === '-';
+}
+
+function lengkapi_kontak_user(mysqli $conn, array &$user, array $post): array {
+    $need_hp = is_kontak_kosong($user['no_hp'] ?? '');
+    $need_alamat = is_kontak_kosong($user['alamat'] ?? '');
+    if (!$need_hp && !$need_alamat) {
+        return ['ok' => true];
+    }
+
+    $no_hp = $need_hp ? trim((string)($post['no_hp'] ?? '')) : (string)$user['no_hp'];
+    $alamat = $need_alamat ? trim((string)($post['alamat'] ?? '')) : (string)$user['alamat'];
+
+    if (($need_hp && $no_hp === '') || ($need_alamat && $alamat === '')) {
+        return ['ok' => false, 'message' => 'Mohon lengkapi nomor WhatsApp/telepon dan alamat Anda terlebih dahulu.'];
+    }
+
+    $id_user = (int)$user['id_user'];
+    $stmt = mysqli_prepare($conn, 'UPDATE users SET no_hp = ?, alamat = ? WHERE id_user = ?');
+    mysqli_stmt_bind_param($stmt, 'ssi', $no_hp, $alamat, $id_user);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+
+    $user['no_hp'] = $no_hp;
+    $user['alamat'] = $alamat;
+    $_SESSION['user'] = $user;
+
+    return ['ok' => true];
+}
+
+function render_kontak_fields_if_needed(array $user, array $post = [], bool $disabled = false): string {
+    $need_hp = is_kontak_kosong($user['no_hp'] ?? '');
+    $need_alamat = is_kontak_kosong($user['alamat'] ?? '');
+    if (!$need_hp && !$need_alamat) {
+        return '';
+    }
+
+    $dis_attr = $disabled ? ' disabled' : '';
+    $html = '';
+
+    if ($need_hp) {
+        $val_hp = e($post['no_hp'] ?? '');
+        $html .= '<div class="form-group">'
+               . '<label for="no_hp" class="form-label">No. Telepon / WhatsApp</label>'
+               . '<input type="text" id="no_hp" name="no_hp" class="form-control" placeholder="0812xxxxxxxx" value="' . $val_hp . '" required' . $dis_attr . '>'
+               . '</div>';
+    }
+
+    if ($need_alamat) {
+        $val_alamat = e($post['alamat'] ?? '');
+        $html .= '<div class="form-group">'
+               . '<label for="alamat" class="form-label">Alamat Lengkap</label>'
+               . '<textarea id="alamat" name="alamat" class="form-control" placeholder="Alamat domisili untuk verifikasi peminjaman atau layanan" required' . $dis_attr . '>' . $val_alamat . '</textarea>'
+               . '<span class="form-help">Cukup diisi sekali dan otomatis tersimpan ke profil Anda.</span>'
+               . '</div>';
+    }
+
+    return $html;
 }
 
 function upload_gambar(array $file, string $target_dir, string $prefix = 'img_'): array {
@@ -168,6 +230,15 @@ function get_hero_banner(): ?string {
     return null;
 }
 
+function build_placeholder_svg(string $label, string $bg_color, string $ring_stroke, string $accent_color): string {
+    $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400">'
+         . '<rect width="640" height="400" fill="' . $bg_color . '"/>'
+         . '<circle cx="320" cy="148" r="54" fill="#fbfaf8" stroke="' . $ring_stroke . '" stroke-width="1.5"/>'
+         . '<g transform="translate(285 113) scale(0.14)">' . brand_logo_paths('#1e1e1c', $accent_color) . '</g>'
+         . '</svg>';
+    return 'data:image/svg+xml;utf8,' . rawurlencode($svg);
+}
+
 function get_gambar_alat(?string $filename, string $label = 'Perkakas Komunitas'): string {
     $clean = trim((string)$filename);
     if ($clean !== '' && $clean !== 'default_alat.jpg') {
@@ -176,16 +247,7 @@ function get_gambar_alat(?string $filename, string $label = 'Perkakas Komunitas'
             return BASE_URL . '/assets/uploads/alat/' . rawurlencode($clean);
         }
     }
-    $safe_label = htmlspecialchars(mb_strimwidth($label, 0, 28, '...'), ENT_QUOTES, 'UTF-8');
-    $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400">'
-         . '<rect width="640" height="400" fill="#0e5a6d"/>'
-         . '<circle cx="320" cy="175" r="56" fill="rgba(255,255,255,0.1)"/>'
-         . '<path d="M302 152 L338 152 L344 196 L296 196 Z" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linejoin="round"/>'
-         . '<path d="M310 152 L310 138 C310 133 330 133 330 138 L330 152" fill="none" stroke="#ffffff" stroke-width="3.5"/>'
-         . '<text x="320" y="280" font-family="Inter, sans-serif" font-size="20" font-weight="600" fill="#ffffff" text-anchor="middle">' . $safe_label . '</text>'
-         . '<text x="320" y="308" font-family="Inter, sans-serif" font-size="14" fill="#cde0e6" text-anchor="middle">PinjamKarya</text>'
-         . '</svg>';
-    return 'data:image/svg+xml;utf8,' . rawurlencode($svg);
+    return build_placeholder_svg($label, '#ebe9e4', '#dbd9d3', '#686660');
 }
 
 function get_gambar_tiket(?string $filename, string $label = 'Barang Perbaikan'): string {
@@ -196,15 +258,7 @@ function get_gambar_tiket(?string $filename, string $label = 'Barang Perbaikan')
             return BASE_URL . '/assets/uploads/tiket/' . rawurlencode($clean);
         }
     }
-    $safe_label = htmlspecialchars(mb_strimwidth($label, 0, 28, '...'), ENT_QUOTES, 'UTF-8');
-    $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400">'
-         . '<rect width="640" height="400" fill="#134e5e"/>'
-         . '<circle cx="320" cy="175" r="56" fill="rgba(255,255,255,0.1)"/>'
-         . '<path d="M302 193 L338 157 M330 150 L345 165 M295 186 L310 201" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>'
-         . '<text x="320" y="280" font-family="Inter, sans-serif" font-size="20" font-weight="600" fill="#ffffff" text-anchor="middle">' . $safe_label . '</text>'
-         . '<text x="320" y="308" font-family="Inter, sans-serif" font-size="14" fill="#cde0e6" text-anchor="middle">PinjamKarya</text>'
-         . '</svg>';
-    return 'data:image/svg+xml;utf8,' . rawurlencode($svg);
+    return build_placeholder_svg($label, '#ebe9e4', '#c3c0b9', '#5c5a55');
 }
 
 function generate_kode_booking(mysqli $conn): string {
@@ -294,6 +348,142 @@ function badge_status_tiket(string $status): string {
     ];
     $cls = $map[$status] ?? 'pk-badge--muted';
     return '<span class="pk-badge ' . $cls . '">' . e($status) . '</span>';
+}
+
+function brand_logo_paths(string $body_color, string $accent_color): string {
+    return '<path fill="' . $body_color . '" d="M438 107q-3-3-7-3h-83q-7 0-8 8v44h-40v-44q-1-8-8-8h-88q-7 0-8 8v44h-43v-44q0-8-8-8H66q-4 0-7 3L1 192l-1 4v56q1 7 8 8h83q8 0 8-8l2-33h60v33q1 7 8 8h164q8-1 8-8v-33h60l1 33q1 8 8 8h81q7-1 8-8v-63l-2-5zM491 273h-82q-8 1-9 9v18h-67v-18q0-8-8-9H167q-8 1-8 9v18H98v-18q-1-8-8-9H8q-7 1-8 9v153q1 7 8 8h483q7-1 8-8V282q-1-8-8-9zM324 149q7 0 8-8v-41c0-2-4-44-83-44-78 0-82 42-82 44v41a8 8 0 1 0 16 0v-40c0-3 6-29 66-29 61 0 66 26 67 29v40q0 8 8 8"/>'
+         . '<path fill="' . $accent_color . '" d="M146 290q8-1 9-8v-46q-1-7-9-8h-36q-7 1-8 8v46q1 7 8 8zM390 290q8-1 8-8v-46q0-7-8-8h-36q-7 1-8 8v46q1 7 8 8z"/>';
+}
+
+function brand_logo(string $variant = 'dark', int $size = 22): string {
+    $palettes = [
+        'dark'  => ['body' => '#f3f2ee', 'accent' => '#b0aea7'],
+        'light' => ['body' => '#1e1e1c', 'accent' => '#686660'],
+        'soft'  => ['body' => '#1e1e1c', 'accent' => '#5c5a55'],
+    ];
+    $colors = $palettes[$variant] ?? $palettes['light'];
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="' . $size . '" height="' . $size . '" viewBox="0 0 499 499" aria-hidden="true" focusable="false">'
+         . brand_logo_paths($colors['body'], $colors['accent'])
+         . '</svg>';
+}
+
+function render_public_nav(string $active = 'home', bool $overlay = false): string {
+    $is_logged_in = isset($_SESSION['user']);
+    $home_url = BASE_URL . ($is_logged_in ? '/modul9/dashboard.php' : '/index.php');
+    $katalog_url = BASE_URL . '/modul4/katalog.php';
+
+    ob_start();
+    ?>
+<header id="site-header" class="site-nav<?= $overlay ? ' site-nav--overlay' : '' ?>">
+    <div class="site-nav_shell">
+        <a class="site-nav_brand" href="<?= e($home_url) ?>" aria-label="PinjamKarya, beranda">
+            <span class="site-nav_logo-wrap"><?= brand_logo('light', 18) ?></span>
+            <span class="site-nav_wordmark">PinjamKarya</span>
+        </a>
+
+        <button type="button" class="site-nav_toggle" aria-expanded="false" aria-controls="site-menu">
+            <span class="site-nav_toggle-label">Menu</span>
+            <span class="site-nav_toggle-icon" aria-hidden="true"><span></span></span>
+        </button>
+
+        <div class="site-nav_drawer">
+            <nav id="site-menu" class="site-nav_menu" aria-label="Navigasi utama">
+                <a class="site-nav_link" href="<?= e($home_url) ?>"<?= $active === 'home' ? ' aria-current="page"' : '' ?>>Home</a>
+                <a class="site-nav_link" href="<?= e($katalog_url) ?>"<?= $active === 'katalog' ? ' aria-current="page"' : '' ?>>Katalog</a>
+                <?php if ($is_logged_in): ?>
+                    <a class="site-nav_cta" href="<?= BASE_URL ?>/modul1/logout.php">Keluar</a>
+                <?php else: ?>
+                    <a class="site-nav_link" href="<?= BASE_URL ?>/modul1/register.php">Daftar</a>
+                    <a class="site-nav_cta" href="<?= BASE_URL ?>/modul1/login.php">Masuk</a>
+                <?php endif; ?>
+            </nav>
+        </div>
+    </div>
+</header>
+    <?php
+    return ob_get_clean();
+}
+
+function render_public_footer(): string {
+    $is_logged_in = isset($_SESSION['user']);
+    $home_url = BASE_URL . ($is_logged_in ? '/modul9/dashboard.php' : '/index.php');
+
+    ob_start();
+    ?>
+<footer class="pk-footer">
+    <div class="pk-footer-inner">
+        <div class="pk-footer-top">
+            <a href="<?= e($home_url) ?>" class="pk-footer-brand">
+                <span class="pk-brand-icon"><?= brand_logo('light', 18) ?></span>
+                <span>PinjamKarya.</span>
+            </a>
+            <nav aria-label="Navigasi footer">
+                <ul class="pk-footer-links">
+                    <li><a href="<?= e($home_url) ?>">Home</a></li>
+                    <li><a href="<?= BASE_URL ?>/modul4/katalog.php">Katalog</a></li>
+                    <?php if ($is_logged_in): ?>
+                        <li><a href="<?= BASE_URL ?>/modul1/logout.php">Keluar</a></li>
+                    <?php else: ?>
+                        <li><a href="<?= BASE_URL ?>/modul1/login.php">Masuk</a></li>
+                        <li><a href="<?= BASE_URL ?>/modul1/register.php">Daftar</a></li>
+                    <?php endif; ?>
+                </ul>
+            </nav>
+        </div>
+        <div class="pk-footer-bottom">
+            <span>&copy; 2026 PinjamKarya &bull; Informatika Universitas Jenderal Soedirman</span>
+            <a href="#main-content">Kembali ke atas</a>
+        </div>
+    </div>
+</footer>
+    <?php
+    return ob_get_clean();
+}
+
+function render_tool_card(array $alat, string $detail_url, string $heading_tag = 'h2'): string {
+    $tag = in_array($heading_tag, ['h2', 'h3'], true) ? $heading_tag : 'h2';
+    $biaya = (float)($alat['biaya_perawatan'] ?? 0) <= 0 ? 'Gratis' : rupiah((float)$alat['biaya_perawatan']);
+    $is_maintenance = ($alat['status_alat'] ?? '') === 'Perawatan';
+
+    ob_start();
+    ?>
+<article class="pk-tool-card<?= $is_maintenance ? ' is-maintenance' : '' ?>">
+    <div class="pk-tool-media">
+        <img src="<?= e(get_gambar_alat($alat['foto_alat'] ?? '', $alat['nama_alat'] ?? '')) ?>"
+             alt="<?= e($alat['nama_alat'] ?? '') ?>"
+             width="640"
+             height="480"
+             loading="lazy">
+    </div>
+
+    <div class="pk-tool-status">
+        <?= badge_status_alat((string)($alat['status_alat'] ?? '')) ?>
+    </div>
+
+    <div class="pk-tool-shade">
+        <span class="pk-tool-meta-label"><?= e($alat['nama_kategori'] ?? '') ?></span>
+        <<?= $tag ?> class="pk-tool-title"><?= e($alat['nama_alat'] ?? '') ?></<?= $tag ?>>
+        <div class="pk-tool-foot">
+            <span class="pk-tool-specs">
+                <?= (int)($alat['max_hari_pinjam'] ?? 0) ?> Hari &middot; Skor <?= (int)($alat['min_skor'] ?? 0) ?> &middot; <?= e($biaya) ?>
+            </span>
+            <span class="pk-tool-arrow" aria-hidden="true">&#8594;</span>
+        </div>
+    </div>
+
+    <a href="<?= e($detail_url) ?>" class="pk-tool-hit" aria-label="<?= e(($alat['nama_alat'] ?? '') . ' — ' . ($alat['status_alat'] ?? '')) ?>"></a>
+</article>
+    <?php
+    return ob_get_clean();
+}
+
+function google_mark_svg(int $size = 16): string {
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="' . $size . '" height="' . $size . '" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">'
+         . '<path d="M21.8 12.23c0-.72-.06-1.42-.18-2.09H12v3.96h5.5a4.7 4.7 0 0 1-2.04 3.08v2.56h3.3c1.93-1.78 3.04-4.4 3.04-7.51z"/>'
+         . '<path d="M12 22c2.75 0 5.06-.91 6.75-2.46l-3.3-2.56c-.91.61-2.08.98-3.45.98-2.65 0-4.9-1.79-5.7-4.2H2.89v2.64A10 10 0 0 0 12 22z"/>'
+         . '<path d="M6.3 13.76A6 6 0 0 1 6 12c0-.61.11-1.2.3-1.76V7.6H2.89A10 10 0 0 0 2 12c0 1.61.39 3.14 1.07 4.4l3.23-2.64z"/>'
+         . '<path d="M12 6.04c1.5 0 2.84.51 3.9 1.52l2.92-2.92C17.05 2.99 14.75 2 12 2A10 10 0 0 0 2.89 7.6l3.41 2.64c.8-2.41 3.05-4.2 5.7-4.2z"/>'
+         . '</svg>';
 }
 
 function svg_icon(string $name, int $size = 20): string {

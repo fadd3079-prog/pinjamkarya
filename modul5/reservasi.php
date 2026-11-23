@@ -57,52 +57,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($tgl_selesai < $tgl_mulai) {
         set_flash('warning', 'Tanggal selesai tidak boleh lebih awal dari tanggal mulai.');
     } else {
-        $durasi_hari = (int)round((strtotime($tgl_selesai) - strtotime($tgl_mulai)) / 86400) + 1;
-        if ($durasi_hari > $max_hari) {
-            set_flash('danger', 'Durasi peminjaman (' . $durasi_hari . ' hari) melebihi batas maksimal (' . $max_hari . ' hari).');
+        $kontak_res = lengkapi_kontak_user($conn, $warga, $_POST);
+        if (!$kontak_res['ok']) {
+            set_flash('warning', $kontak_res['message']);
         } else {
-            mysqli_begin_transaction($conn);
-            try {
-                $stmt_lock = mysqli_prepare($conn, 'SELECT status_alat FROM aset_alat WHERE id_alat = ? FOR UPDATE');
-                mysqli_stmt_bind_param($stmt_lock, 'i', $id_alat);
-                mysqli_stmt_execute($stmt_lock);
-                $row_lock = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_lock));
-                mysqli_stmt_close($stmt_lock);
+            $durasi_hari = (int)round((strtotime($tgl_selesai) - strtotime($tgl_mulai)) / 86400) + 1;
+            if ($durasi_hari > $max_hari) {
+                set_flash('danger', 'Durasi peminjaman (' . $durasi_hari . ' hari) melebihi batas maksimal (' . $max_hari . ' hari).');
+            } else {
+                mysqli_begin_transaction($conn);
+                try {
+                    $stmt_lock = mysqli_prepare($conn, 'SELECT status_alat FROM aset_alat WHERE id_alat = ? FOR UPDATE');
+                    mysqli_stmt_bind_param($stmt_lock, 'i', $id_alat);
+                    mysqli_stmt_execute($stmt_lock);
+                    $row_lock = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_lock));
+                    mysqli_stmt_close($stmt_lock);
 
-                if (!$row_lock || in_array($row_lock['status_alat'], ['Perawatan', 'Menunggu Verifikasi'], true)) {
-                    mysqli_rollback($conn);
-                    set_flash('danger', 'Unit sedang dalam perawatan dan tidak dapat dipesan.');
-                } else {
-                    $bentrok = cek_bentrok_jadwal($conn, $id_alat, $tgl_mulai, $tgl_selesai);
-                    if ($bentrok > 0) {
-                        $stmt_max = mysqli_prepare($conn, "SELECT DATE_ADD(MAX(tgl_selesai), INTERVAL 1 DAY) AS tgl_kosong
-                            FROM peminjaman
-                            WHERE id_alat = ? AND status_peminjaman IN ('Dipesan', 'Dipinjam') AND tgl_selesai >= CURDATE()");
-                        mysqli_stmt_bind_param($stmt_max, 'i', $id_alat);
-                        mysqli_stmt_execute($stmt_max);
-                        $row_max = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_max));
-                        mysqli_stmt_close($stmt_max);
-
+                    if (!$row_lock || in_array($row_lock['status_alat'], ['Perawatan', 'Menunggu Verifikasi'], true)) {
                         mysqli_rollback($conn);
-                        $saran_tgl = !empty($row_max['tgl_kosong']) ? format_tanggal($row_max['tgl_kosong']) : format_tanggal($today);
-                        set_flash('danger', 'Jadwal bentrok. Tanggal kosong terdekat: ' . $saran_tgl . '.');
+                        set_flash('danger', 'Unit sedang dalam perawatan dan tidak dapat dipesan.');
                     } else {
-                        $kode_booking = generate_kode_booking($conn);
-                        $status_awal = 'Dipesan';
-                        $stmt_ins = mysqli_prepare($conn, 'INSERT INTO peminjaman (kode_booking, id_alat, id_warga, tgl_mulai, tgl_selesai, setuju_panduan, status_peminjaman) VALUES (?, ?, ?, ?, ?, ?, ?)');
-                        mysqli_stmt_bind_param($stmt_ins, 'siissis', $kode_booking, $id_alat, $id_warga, $tgl_mulai, $tgl_selesai, $setuju_panduan, $status_awal);
-                        mysqli_stmt_execute($stmt_ins);
-                        mysqli_stmt_close($stmt_ins);
+                        $bentrok = cek_bentrok_jadwal($conn, $id_alat, $tgl_mulai, $tgl_selesai);
+                        if ($bentrok > 0) {
+                            $stmt_max = mysqli_prepare($conn, "SELECT DATE_ADD(MAX(tgl_selesai), INTERVAL 1 DAY) AS tgl_kosong
+                                FROM peminjaman
+                                WHERE id_alat = ? AND status_peminjaman IN ('Dipesan', 'Dipinjam') AND tgl_selesai >= CURDATE()");
+                            mysqli_stmt_bind_param($stmt_max, 'i', $id_alat);
+                            mysqli_stmt_execute($stmt_max);
+                            $row_max = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_max));
+                            mysqli_stmt_close($stmt_max);
 
-                        mysqli_commit($conn);
-                        set_flash('success', 'Reservasi berhasil dibuat. Kode Booking: ' . $kode_booking . '.');
-                        header('Location: ' . BASE_URL . '/modul5/riwayat_pinjam.php');
-                        exit;
+                            mysqli_rollback($conn);
+                            $saran_tgl = !empty($row_max['tgl_kosong']) ? format_tanggal($row_max['tgl_kosong']) : format_tanggal($today);
+                            set_flash('danger', 'Jadwal bentrok. Tanggal kosong terdekat: ' . $saran_tgl . '.');
+                        } else {
+                            $kode_booking = generate_kode_booking($conn);
+                            $status_awal = 'Dipesan';
+                            $stmt_ins = mysqli_prepare($conn, 'INSERT INTO peminjaman (kode_booking, id_alat, id_warga, tgl_mulai, tgl_selesai, setuju_panduan, status_peminjaman) VALUES (?, ?, ?, ?, ?, ?, ?)');
+                            mysqli_stmt_bind_param($stmt_ins, 'siissis', $kode_booking, $id_alat, $id_warga, $tgl_mulai, $tgl_selesai, $setuju_panduan, $status_awal);
+                            mysqli_stmt_execute($stmt_ins);
+                            mysqli_stmt_close($stmt_ins);
+
+                            mysqli_commit($conn);
+                            set_flash('success', 'Reservasi berhasil dibuat. Kode Booking: ' . $kode_booking . '.');
+                            header('Location: ' . BASE_URL . '/modul5/riwayat_pinjam.php');
+                            exit;
+                        }
                     }
+                } catch (Throwable $e) {
+                    mysqli_rollback($conn);
+                    set_flash('danger', 'Gagal memproses reservasi.');
                 }
-            } catch (Throwable $e) {
-                mysqli_rollback($conn);
-                set_flash('danger', 'Gagal memproses reservasi.');
             }
         }
     }
@@ -168,6 +173,8 @@ require_once ROOT_PATH . '/includes/header.php';
                     Maksimal <?= (int)$max_hari ?> hari.
                 </span>
             </div>
+
+            <?= render_kontak_fields_if_needed($warga, $_POST, !$skor_cukup) ?>
 
             <div class="form-group">
                 <label class="form-label">Panduan Keselamatan (<?= e($alat['nama_kategori']) ?>)</label>

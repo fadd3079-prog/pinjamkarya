@@ -24,27 +24,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($nama_alat === '' || $deskripsi === '' || $id_kategori <= 0 || $harga_beli_baru <= 0) {
         set_flash('warning', 'Mohon lengkapi nama alat, kategori, harga baru, dan deskripsi.');
     } else {
-        $foto_filename = 'default_alat.jpg';
-        $upload_ok = true;
-        if (isset($_FILES['foto_alat']) && $_FILES['foto_alat']['error'] !== UPLOAD_ERR_NO_FILE) {
-            $up = upload_gambar($_FILES['foto_alat'], UPLOAD_ALAT_PATH, 'mitra_');
-            if (!$up['success']) {
-                set_flash('danger', $up['message']);
-                $upload_ok = false;
-            } else {
-                $foto_filename = $up['filename'];
+        $kontak_res = lengkapi_kontak_user($conn, $_SESSION['user'], $_POST);
+        if (!$kontak_res['ok']) {
+            set_flash('warning', $kontak_res['message']);
+        } else {
+            $foto_filename = 'default_alat.jpg';
+            $upload_ok = true;
+            if (isset($_FILES['foto_alat']) && $_FILES['foto_alat']['error'] !== UPLOAD_ERR_NO_FILE) {
+                $up = upload_gambar($_FILES['foto_alat'], UPLOAD_ALAT_PATH, 'mitra_');
+                if (!$up['success']) {
+                    set_flash('danger', $up['message']);
+                    $upload_ok = false;
+                } else {
+                    $foto_filename = $up['filename'];
+                }
             }
-        }
 
-        if ($upload_ok) {
-            $stmt = mysqli_prepare($conn, 'INSERT INTO aset_alat (id_kategori, id_pemilik, nama_alat, deskripsi, foto_alat, harga_beli_baru, biaya_perawatan, max_hari_pinjam, min_skor, status_alat) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-            mysqli_stmt_bind_param($stmt, 'iisssddiis', $id_kategori, $id_mitra, $nama_alat, $deskripsi, $foto_filename, $harga_beli_baru, $biaya_perawatan, $max_hari_pinjam, $min_skor, $status_awal);
-            mysqli_stmt_execute($stmt);
-            mysqli_stmt_close($stmt);
+            if ($upload_ok) {
+                $stmt = mysqli_prepare($conn, 'INSERT INTO aset_alat (id_kategori, id_pemilik, nama_alat, deskripsi, foto_alat, harga_beli_baru, biaya_perawatan, max_hari_pinjam, min_skor, status_alat) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+                mysqli_stmt_bind_param($stmt, 'iisssddiis', $id_kategori, $id_mitra, $nama_alat, $deskripsi, $foto_filename, $harga_beli_baru, $biaya_perawatan, $max_hari_pinjam, $min_skor, $status_awal);
+                mysqli_stmt_execute($stmt);
+                mysqli_stmt_close($stmt);
 
-            set_flash('success', 'Pengajuan titip alat dikirim dan menunggu verifikasi Admin Hub.');
-            header('Location: ' . BASE_URL . '/modul3/aset_mitra.php');
-            exit;
+                set_flash('success', 'Pengajuan titip alat dikirim dan menunggu verifikasi Admin Hub.');
+                header('Location: ' . BASE_URL . '/modul3/aset_mitra.php');
+                exit;
+            }
         }
     }
 }
@@ -141,6 +146,8 @@ require_once ROOT_PATH . '/includes/header.php';
                 <label for="foto_alat" class="form-label">Foto Alat (Opsional, maks. 2 MB)</label>
                 <input type="file" id="foto_alat" name="foto_alat" class="form-control" accept=".jpg,.jpeg,.png,.webp">
             </div>
+
+            <?= render_kontak_fields_if_needed($_SESSION['user'], $_POST) ?>
 
             <button type="submit" class="btn btn-primary w-100">
                 <?= svg_icon('check-circle', 16) ?>

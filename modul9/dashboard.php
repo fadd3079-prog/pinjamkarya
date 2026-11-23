@@ -1,259 +1,123 @@
 <?php
 require_once dirname(__DIR__) . '/config/app.php';
+require_login();
+refresh_user_session($conn);
+bersihkan_ghost_booking($conn);
 
-$sql_hemat_pinjam = "SELECT COALESCE(SUM(a.harga_beli_baru - a.biaya_perawatan), 0) AS total
-                     FROM peminjaman p
-                     JOIN aset_alat a ON p.id_alat = a.id_alat
-                     WHERE p.status_peminjaman = 'Selesai'";
-$hemat_pinjam = (float)(mysqli_fetch_assoc(mysqli_query($conn, $sql_hemat_pinjam))['total'] ?? 0);
+$user = $_SESSION['user'];
+$id_user = (int)$user['id_user'];
+$role = (string)$user['role'];
 
-$sql_hemat_servis = "SELECT COALESCE(SUM(k.estimasi_harga_baru - t.estimasi_biaya), 0) AS total
-                     FROM tiket_perbaikan t
-                     JOIN kategori_alat k ON t.id_kategori = k.id_kategori
-                     WHERE t.status_tiket = 'Selesai'";
-$hemat_servis = (float)(mysqli_fetch_assoc(mysqli_query($conn, $sql_hemat_servis))['total'] ?? 0);
+$cards = [];
+$actions = [];
 
-$total_penghematan = $hemat_pinjam + $hemat_servis;
+if ($role === 'warga') {
+    $stmt_p = mysqli_prepare($conn, "SELECT COUNT(*) AS total FROM peminjaman WHERE id_warga = ? AND status_peminjaman IN ('Dipesan', 'Dipinjam')");
+    mysqli_stmt_bind_param($stmt_p, 'i', $id_user);
+    mysqli_stmt_execute($stmt_p);
+    $pinjam_aktif = (int)(mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_p))['total'] ?? 0);
+    mysqli_stmt_close($stmt_p);
 
-$sql_ewaste_kg = "SELECT COALESCE(SUM(k.rata_rata_berat_kg), 0) AS total
-                  FROM tiket_perbaikan t
-                  JOIN kategori_alat k ON t.id_kategori = k.id_kategori
-                  WHERE t.status_tiket = 'Selesai'";
-$total_ewaste_kg = (float)(mysqli_fetch_assoc(mysqli_query($conn, $sql_ewaste_kg))['total'] ?? 0);
+    $stmt_t = mysqli_prepare($conn, "SELECT COUNT(*) AS total FROM tiket_perbaikan WHERE id_pelapor = ? AND status_tiket NOT IN ('Selesai', 'Dibatalkan')");
+    mysqli_stmt_bind_param($stmt_t, 'i', $id_user);
+    mysqli_stmt_execute($stmt_t);
+    $tiket_aktif = (int)(mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_t))['total'] ?? 0);
+    mysqli_stmt_close($stmt_t);
 
-$sql_unit_servis = "SELECT COUNT(*) AS total FROM tiket_perbaikan WHERE status_tiket = 'Selesai'";
-$total_unit_servis = (int)(mysqli_fetch_assoc(mysqli_query($conn, $sql_unit_servis))['total'] ?? 0);
+    $cards = [
+        ['label' => 'Pinjaman Aktif', 'value' => $pinjam_aktif . ' Alat', 'href' => BASE_URL . '/modul5/riwayat_pinjam.php'],
+        ['label' => 'Tiket Servis Aktif', 'value' => $tiket_aktif . ' Tiket', 'href' => BASE_URL . '/modul8/tiket_saya.php'],
+        ['label' => 'Skor Kepercayaan', 'value' => (int)$user['skor_kredibilitas'] . ' Poin', 'href' => BASE_URL . '/modul1/profil.php'],
+    ];
 
-$sql_pinjam_tuntas = "SELECT COUNT(*) AS total FROM peminjaman WHERE status_peminjaman = 'Selesai'";
-$total_pinjam_tuntas = (int)(mysqli_fetch_assoc(mysqli_query($conn, $sql_pinjam_tuntas))['total'] ?? 0);
+    $actions = [
+        ['label' => 'Pinjam Perkakas', 'btn' => 'Lihat Katalog', 'href' => BASE_URL . '/modul4/katalog.php', 'primary' => true],
+        ['label' => 'Perbaiki Barang Rusak', 'btn' => 'Ajukan Perbaikan', 'href' => BASE_URL . '/modul7/buat_tiket.php', 'primary' => false],
+    ];
+} elseif ($role === 'mitra') {
+    if (!empty($user['is_kontributor'])) {
+        $stmt_a = mysqli_prepare($conn, "SELECT COUNT(*) AS total FROM aset_alat WHERE id_pemilik = ?");
+        mysqli_stmt_bind_param($stmt_a, 'i', $id_user);
+        mysqli_stmt_execute($stmt_a);
+        $total_titipan = (int)(mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_a))['total'] ?? 0);
+        mysqli_stmt_close($stmt_a);
 
-$sql_utilitas = "SELECT k.id_kategori, k.nama_kategori, k.rata_rata_berat_kg,
-    (SELECT COUNT(*) FROM peminjaman p JOIN aset_alat a ON p.id_alat = a.id_alat WHERE a.id_kategori = k.id_kategori AND p.status_peminjaman = 'Selesai') AS jml_pinjam_selesai,
-    (SELECT COALESCE(SUM(a.harga_beli_baru - a.biaya_perawatan), 0) FROM peminjaman p JOIN aset_alat a ON p.id_alat = a.id_alat WHERE a.id_kategori = k.id_kategori AND p.status_peminjaman = 'Selesai') AS hemat_pinjam_kat,
-    (SELECT COUNT(*) FROM tiket_perbaikan t WHERE t.id_kategori = k.id_kategori AND t.status_tiket = 'Selesai') AS jml_servis_selesai,
-    (SELECT COALESCE(SUM(k.estimasi_harga_baru - t.estimasi_biaya), 0) FROM tiket_perbaikan t WHERE t.id_kategori = k.id_kategori AND t.status_tiket = 'Selesai') AS hemat_servis_kat
-    FROM kategori_alat k
-    ORDER BY k.id_kategori ASC";
-$res_util = mysqli_query($conn, $sql_utilitas);
-$kategori_metrics = [];
-$max_aktivitas = 1;
-while ($row = mysqli_fetch_assoc($res_util)) {
-    $aktivitas = (int)$row['jml_pinjam_selesai'] + (int)$row['jml_servis_selesai'];
-    if ($aktivitas > $max_aktivitas) {
-        $max_aktivitas = $aktivitas;
+        $stmt_ap = mysqli_prepare($conn, "SELECT COUNT(*) AS total FROM aset_alat WHERE id_pemilik = ? AND status_alat = 'Dipinjam'");
+        mysqli_stmt_bind_param($stmt_ap, 'i', $id_user);
+        mysqli_stmt_execute($stmt_ap);
+        $titipan_dipinjam = (int)(mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_ap))['total'] ?? 0);
+        mysqli_stmt_close($stmt_ap);
+
+        $cards[] = ['label' => 'Alat Titipan', 'value' => $total_titipan . ' Unit', 'href' => BASE_URL . '/modul3/aset_mitra.php'];
+        $cards[] = ['label' => 'Sedang Dipinjam', 'value' => $titipan_dipinjam . ' Unit', 'href' => BASE_URL . '/modul3/aset_mitra.php'];
+        $actions[] = ['label' => 'Kelola Alat Titipan', 'btn' => 'Alat Titipan Saya', 'href' => BASE_URL . '/modul3/aset_mitra.php', 'primary' => true];
     }
-    $row['total_aktivitas'] = $aktivitas;
-    $row['total_hemat_kat'] = (float)$row['hemat_pinjam_kat'] + (float)$row['hemat_servis_kat'];
-    $row['total_kg_kat'] = (int)$row['jml_servis_selesai'] * (float)$row['rata_rata_berat_kg'];
-    $kategori_metrics[] = $row;
+
+    if (!empty($user['is_teknisi'])) {
+        $q_antre = mysqli_query($conn, "SELECT COUNT(*) AS total FROM tiket_perbaikan WHERE status_tiket = 'Menunggu Diagnosis'");
+        $antrean = (int)(mysqli_fetch_assoc($q_antre)['total'] ?? 0);
+
+        $stmt_tk = mysqli_prepare($conn, "SELECT COUNT(*) AS total FROM tiket_perbaikan WHERE id_teknisi = ? AND status_tiket NOT IN ('Selesai', 'Dibatalkan')");
+        mysqli_stmt_bind_param($stmt_tk, 'i', $id_user);
+        mysqli_stmt_execute($stmt_tk);
+        $tugas_teknisi = (int)(mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_tk))['total'] ?? 0);
+        mysqli_stmt_close($stmt_tk);
+
+        $cards[] = ['label' => 'Antrean Servis', 'value' => $antrean . ' Tiket', 'href' => BASE_URL . '/modul8/antrean_teknisi.php'];
+        $cards[] = ['label' => 'Sedang Ditangani', 'value' => $tugas_teknisi . ' Tiket', 'href' => BASE_URL . '/modul8/antrean_teknisi.php'];
+        $actions[] = ['label' => 'Perbaikan Warga', 'btn' => 'Meja Kerja Teknisi', 'href' => BASE_URL . '/modul8/antrean_teknisi.php', 'primary' => empty($actions)];
+    }
+
+    if (empty($actions)) {
+        $actions[] = ['label' => 'Pinjam Perkakas', 'btn' => 'Lihat Katalog', 'href' => BASE_URL . '/modul4/katalog.php', 'primary' => true];
+    }
+} else {
+    $alat_tersedia = (int)(mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM aset_alat WHERE status_alat = 'Tersedia'"))['total'] ?? 0);
+    $pinjam_aktif = (int)(mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM peminjaman WHERE status_peminjaman IN ('Dipesan', 'Dipinjam')"))['total'] ?? 0);
+    $tiket_terbuka = (int)(mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM tiket_perbaikan WHERE status_tiket NOT IN ('Selesai', 'Dibatalkan')"))['total'] ?? 0);
+    $alat_pending = (int)(mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM aset_alat WHERE status_alat = 'Menunggu Verifikasi'"))['total'] ?? 0);
+    $teknisi_pending = (int)(mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM users WHERE is_teknisi = 1 AND is_verified_teknisi = 0"))['total'] ?? 0);
+
+    $cards = [
+        ['label' => 'Alat Tersedia', 'value' => $alat_tersedia . ' Unit', 'href' => BASE_URL . '/modul3/kelola_aset.php'],
+        ['label' => 'Pinjaman Aktif', 'value' => $pinjam_aktif . ' Transaksi', 'href' => BASE_URL . '/modul5/kelola_transaksi.php'],
+        ['label' => 'Tiket Terbuka', 'value' => $tiket_terbuka . ' Tiket', 'href' => BASE_URL . '/modul8/kelola_tiket.php'],
+        ['label' => 'Perlu Verifikasi', 'value' => ($alat_pending + $teknisi_pending) . ' Antrean', 'href' => BASE_URL . '/modul1/kelola_user.php'],
+    ];
+
+    $actions = [
+        ['label' => 'Inventaris & Verifikasi Alat', 'btn' => 'Inventaris Alat', 'href' => BASE_URL . '/modul3/kelola_aset.php', 'primary' => true],
+        ['label' => 'Transaksi & Inspeksi Pinjam', 'btn' => 'Transaksi Pinjam', 'href' => BASE_URL . '/modul5/kelola_transaksi.php', 'primary' => false],
+    ];
 }
 
-$res_last_pinjam = mysqli_query($conn, "SELECT p.kode_booking, p.tgl_mulai, p.tgl_selesai, a.nama_alat,
-    (a.harga_beli_baru - a.biaya_perawatan) AS nilai_hemat, u.nama AS nama_warga
-    FROM peminjaman p
-    JOIN aset_alat a ON p.id_alat = a.id_alat
-    JOIN users u ON p.id_warga = u.id_user
-    WHERE p.status_peminjaman = 'Selesai'
-    ORDER BY p.id_peminjaman DESC LIMIT 5");
-
-$res_last_servis = mysqli_query($conn, "SELECT t.kode_tiket, t.nama_barang, t.estimasi_biaya,
-    (k.estimasi_harga_baru - t.estimasi_biaya) AS nilai_hemat, k.rata_rata_berat_kg,
-    u.nama AS nama_pelapor, tek.nama AS nama_teknisi
-    FROM tiket_perbaikan t
-    JOIN kategori_alat k ON t.id_kategori = k.id_kategori
-    JOIN users u ON t.id_pelapor = u.id_user
-    LEFT JOIN users tek ON t.id_teknisi = tek.id_user
-    WHERE t.status_tiket = 'Selesai'
-    ORDER BY t.id_tiket DESC LIMIT 5");
-
-$page_title = 'Dashboard Dampak';
+$grid_cols = count($cards) >= 4 ? 'pk-grid--4' : (count($cards) === 2 ? 'pk-grid--2' : 'pk-grid--3');
+$page_title = 'Home';
 require_once ROOT_PATH . '/includes/header.php';
 ?>
 
 <div class="pk-page-header">
-    <h1>Dashboard Dampak Sirkularitas</h1>
-    <div class="btn-group-wrap">
-        <a href="<?= BASE_URL ?>/modul4/katalog.php" class="btn btn-primary">Pinjam Alat</a>
-        <a href="<?= BASE_URL ?>/modul7/buat_tiket.php" class="btn btn-warm">Perbaiki Barang</a>
-    </div>
+    <h1>Halo, <?= e($user['nama']) ?></h1>
 </div>
 
-<section class="pk-grid pk-grid--4 mb-4" aria-label="Indikator Utama">
-    <article class="pk-card mb-0">
-        <div class="d-flex align-center justify-between mb-1">
-            <span class="text-muted">Total Penghematan Warga</span>
-            <?= svg_icon('tag', 18) ?>
-        </div>
-        <div class="fs-xl fw-bold text-primary"><?= rupiah($total_penghematan) ?></div>
-        <div class="mt-2 text-muted" style="font-size:0.82rem;">
-            <div>Pinjam: <strong><?= rupiah($hemat_pinjam) ?></strong></div>
-            <div>Servis: <strong><?= rupiah($hemat_servis) ?></strong></div>
-        </div>
-    </article>
-
-    <article class="pk-card mb-0">
-        <div class="d-flex align-center justify-between mb-1">
-            <span class="text-muted">E-Waste Dicegah (SDG 12)</span>
-            <?= svg_icon('leaf', 18) ?>
-        </div>
-        <div class="fs-xl fw-bold text-secondary"><?= number_format($total_ewaste_kg, 2, ',', '.') ?> Kg</div>
-    </article>
-
-    <article class="pk-card mb-0">
-        <div class="d-flex align-center justify-between mb-1">
-            <span class="text-muted">Barang Diperbaiki</span>
-            <?= svg_icon('wrench', 18) ?>
-        </div>
-        <div class="fs-xl fw-bold text-warm"><?= $total_unit_servis ?> Unit</div>
-    </article>
-
-    <article class="pk-card mb-0">
-        <div class="d-flex align-center justify-between mb-1">
-            <span class="text-muted">Peminjaman Tuntas (SDG 10)</span>
-            <?= svg_icon('box', 18) ?>
-        </div>
-        <div class="fs-xl fw-bold text-primary"><?= $total_pinjam_tuntas ?> Transaksi</div>
-    </article>
+<section class="pk-grid <?= $grid_cols ?> mb-4" aria-label="Ringkasan Utama">
+    <?php foreach ($cards as $c): ?>
+        <a href="<?= e($c['href']) ?>" class="pk-card mb-0">
+            <div class="text-muted"><?= e($c['label']) ?></div>
+            <div class="fs-xl mt-1"><?= e($c['value']) ?></div>
+        </a>
+    <?php endforeach; ?>
 </section>
 
-<section class="pk-card mb-4" aria-labelledby="chart-utilitas-heading">
-    <div class="pk-card-header">
-        <h2 id="chart-utilitas-heading" class="pk-card-title">
-            <?= svg_icon('bar-chart', 18) ?>
-            <span>Utilitas &amp; Penghematan per Kategori</span>
-        </h2>
-    </div>
-
-    <div class="pk-grid pk-grid--2">
-        <div>
-            <?php foreach ($kategori_metrics as $km): ?>
-                <?php
-                $pct = (int)round(($km['total_aktivitas'] / $max_aktivitas) * 100);
-                ?>
-                <div class="mb-3">
-                    <div class="d-flex justify-between align-center flex-wrap gap-1 mb-1">
-                        <strong><?= e($km['nama_kategori']) ?></strong>
-                        <span class="text-muted" style="font-size:0.84rem;">
-                            <strong><?= (int)$km['jml_pinjam_selesai'] ?></strong> Pinjam &bull;
-                            <strong><?= (int)$km['jml_servis_selesai'] ?></strong> Servis &bull;
-                            <strong><?= rupiah($km['total_hemat_kat']) ?></strong>
-                        </span>
-                    </div>
-                    <div class="pk-progress" role="progressbar" aria-valuenow="<?= $pct ?>" aria-valuemin="0" aria-valuemax="100" aria-label="Utilitas <?= e($km['nama_kategori']) ?>">
-                        <div class="pk-progress-bar" style="width: <?= max(6, $pct) ?>%;"></div>
-                    </div>
-                </div>
-            <?php endforeach; ?>
+<section class="pk-grid pk-grid--2" aria-label="Aksi Cepat">
+    <?php foreach ($actions as $act): ?>
+        <div class="pk-card mb-0 d-flex align-center justify-between flex-wrap gap-2">
+            <strong><?= e($act['label']) ?></strong>
+            <a href="<?= e($act['href']) ?>" class="btn <?= $act['primary'] ? 'btn-primary' : 'btn-outline' ?>">
+                <?= e($act['btn']) ?>
+            </a>
         </div>
-
-        <div class="pk-card mb-0">
-            <?php
-            $max_hemat_kat = 1.0;
-            foreach ($kategori_metrics as $km) {
-                if ($km['total_hemat_kat'] > $max_hemat_kat) {
-                    $max_hemat_kat = $km['total_hemat_kat'];
-                }
-            }
-            $svg_height = count($kategori_metrics) * 54 + 16;
-            ?>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 <?= $svg_height ?>" width="100%" height="<?= $svg_height ?>" role="img" aria-label="Perbandingan penghematan per kategori">
-                <?php foreach ($kategori_metrics as $idx => $km): ?>
-                    <?php
-                    $y = 12 + ($idx * 52);
-                    $bar_w = (int)round(($km['total_hemat_kat'] / $max_hemat_kat) * 280);
-                    $bar_w = max(8, $bar_w);
-                    ?>
-                    <text x="4" y="<?= $y + 14 ?>" font-family="Inter, sans-serif" font-size="13" font-weight="500" fill="#112026">
-                        <?= e($km['nama_kategori']) ?>
-                    </text>
-                    <rect x="4" y="<?= $y + 22 ?>" width="280" height="12" rx="6" fill="#eef2f4" />
-                    <rect x="4" y="<?= $y + 22 ?>" width="<?= $bar_w ?>" height="12" rx="6" fill="#0e5a6d" />
-                    <text x="296" y="<?= $y + 33 ?>" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#0e5a6d">
-                        <?= e(rupiah($km['total_hemat_kat'])) ?>
-                    </text>
-                <?php endforeach; ?>
-            </svg>
-        </div>
-    </div>
+    <?php endforeach; ?>
 </section>
-
-<div class="pk-grid pk-grid--2">
-    <section class="pk-card" aria-labelledby="jejak-pinjam-heading">
-        <div class="pk-card-header">
-            <h2 id="jejak-pinjam-heading" class="pk-card-title">
-                <?= svg_icon('calendar', 18) ?>
-                <span>Peminjaman Tuntas Terbaru</span>
-            </h2>
-        </div>
-
-        <?php if (mysqli_num_rows($res_last_pinjam) === 0): ?>
-            <div class="text-muted">Belum ada transaksi selesai.</div>
-        <?php else: ?>
-            <div class="table-responsive">
-                <table class="pk-table">
-                    <thead>
-                        <tr>
-                            <th>Kode</th>
-                            <th>Alat &amp; Peminjam</th>
-                            <th>Penghematan</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php while ($lp = mysqli_fetch_assoc($res_last_pinjam)): ?>
-                            <tr>
-                                <td><strong><?= e($lp['kode_booking']) ?></strong></td>
-                                <td>
-                                    <strong><?= e($lp['nama_alat']) ?></strong><br>
-                                    <span class="text-muted" style="font-size:0.82rem;"><?= e($lp['nama_warga']) ?></span>
-                                </td>
-                                <td class="text-secondary fw-bold">+<?= rupiah($lp['nilai_hemat']) ?></td>
-                            </tr>
-                        <?php endwhile; ?>
-                    </tbody>
-                </table>
-            </div>
-        <?php endif; ?>
-    </section>
-
-    <section class="pk-card" aria-labelledby="jejak-servis-heading">
-        <div class="pk-card-header">
-            <h2 id="jejak-servis-heading" class="pk-card-title">
-                <?= svg_icon('wrench', 18) ?>
-                <span>Perbaikan Tuntas Terbaru</span>
-            </h2>
-        </div>
-
-        <?php if (mysqli_num_rows($res_last_servis) === 0): ?>
-            <div class="text-muted">Belum ada tiket selesai.</div>
-        <?php else: ?>
-            <div class="table-responsive">
-                <table class="pk-table">
-                    <thead>
-                        <tr>
-                            <th>Kode</th>
-                            <th>Barang &amp; Teknisi</th>
-                            <th>Dampak</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php while ($ls = mysqli_fetch_assoc($res_last_servis)): ?>
-                            <tr>
-                                <td><strong><?= e($ls['kode_tiket']) ?></strong></td>
-                                <td>
-                                    <strong><?= e($ls['nama_barang']) ?></strong><br>
-                                    <span class="text-muted" style="font-size:0.82rem;"><?= e($ls['nama_teknisi'] ?? '-') ?></span>
-                                </td>
-                                <td>
-                                    <div class="text-secondary fw-bold">+<?= rupiah($ls['nilai_hemat']) ?></div>
-                                    <div class="text-muted" style="font-size:0.82rem;"><?= number_format((float)$ls['rata_rata_berat_kg'], 2, ',', '.') ?> Kg</div>
-                                </td>
-                            </tr>
-                        <?php endwhile; ?>
-                    </tbody>
-                </table>
-            </div>
-        <?php endif; ?>
-    </section>
-</div>
 
 <?php require_once ROOT_PATH . '/includes/footer.php'; ?>
