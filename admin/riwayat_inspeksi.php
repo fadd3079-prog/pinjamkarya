@@ -12,8 +12,8 @@ if ($user['role'] === 'mitra' && empty($user['is_kontributor'])) {
 
 $id_peminjaman_filter = (int)($_GET['id_peminjaman'] ?? 0);
 
-$sql = "SELECT i.*, p.kode_booking, p.tgl_mulai, p.tgl_selesai, a.nama_alat, a.id_pemilik,
-               w.nama AS nama_peminjam, pt.nama AS nama_petugas
+$sql = "SELECT i.*, p.kode_booking, p.tgl_mulai, p.tgl_selesai, p.status_peminjaman,
+               a.nama_alat, a.id_pemilik, w.nama AS nama_peminjam, pt.nama AS nama_petugas
         FROM inspeksi_alat i
         JOIN peminjaman p ON i.id_peminjaman = p.id_peminjaman
         JOIN aset_alat a ON p.id_alat = a.id_alat
@@ -45,6 +45,34 @@ if ($types !== '') {
 mysqli_stmt_execute($stmt);
 $res_log = mysqli_stmt_get_result($stmt);
 
+$logs_by_booking = [];
+while ($row = mysqli_fetch_assoc($res_log)) {
+    $pid = (int)$row['id_peminjaman'];
+    if (!isset($logs_by_booking[$pid])) {
+        $logs_by_booking[$pid] = [
+            'id_peminjaman'     => $pid,
+            'kode_booking'      => $row['kode_booking'],
+            'nama_alat'         => $row['nama_alat'],
+            'nama_peminjam'     => $row['nama_peminjam'],
+            'tgl_mulai'         => $row['tgl_mulai'],
+            'tgl_selesai'       => $row['tgl_selesai'],
+            'status_peminjaman' => $row['status_peminjaman'],
+            'awal'              => null,
+            'akhir'             => null,
+        ];
+    }
+    $stage = ($row['jenis_inspeksi'] === 'Akhir') ? 'akhir' : 'awal';
+    if ($logs_by_booking[$pid][$stage] === null) {
+        $logs_by_booking[$pid][$stage] = $row;
+    }
+}
+
+$kondisi_rank = [
+    'Baik'         => 0,
+    'Rusak Ringan' => 1,
+    'Rusak Berat'  => 2,
+];
+
 $page_title = 'Log Inspeksi';
 require_once ROOT_PATH . '/includes/header.php';
 ?>
@@ -57,71 +85,123 @@ require_once ROOT_PATH . '/includes/header.php';
 </div>
 
 <section class="pk-table-card" aria-label="Log Inspeksi">
-    <?php if (mysqli_num_rows($res_log) === 0): ?>
+    <?php if (empty($logs_by_booking)): ?>
         <div class="pk-empty-state">
             <div class="pk-empty-icon"><?= svg_icon('clipboard', 22) ?></div>
             <h3>Belum Ada Catatan Inspeksi</h3>
         </div>
     <?php else: ?>
         <div class="pk-table-scroll">
-            <table class="pk-table">
+            <table class="pk-table pk-table--inspeksi">
                 <thead>
                     <tr>
-                        <th>ID &amp; Tanggal</th>
-                        <th>Kode Booking</th>
-                        <th>Alat</th>
-                        <th>Peminjam</th>
-                        <th>Tahap</th>
-                        <th>Kondisi</th>
-                        <th>Catatan &amp; Petugas</th>
+                        <th style="width: 28%;">Booking &amp; Alat</th>
+                        <th>Perbandingan Kondisi (Awal &rarr; Akhir)</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php while ($row = mysqli_fetch_assoc($res_log)): ?>
+                    <?php foreach ($logs_by_booking as $log): ?>
+                        <?php
+                        $awal = $log['awal'];
+                        $akhir = $log['akhir'];
+                        $latest = $akhir ?: $awal;
+                        $rank_awal = $awal ? ($kondisi_rank[$awal['kondisi_fisik']] ?? 0) : null;
+                        $rank_akhir = $akhir ? ($kondisi_rank[$akhir['kondisi_fisik']] ?? 0) : null;
+                        $is_degraded = ($rank_awal !== null && $rank_akhir !== null && $rank_akhir > $rank_awal);
+                        $is_changed = ($awal && $akhir && $awal['kondisi_fisik'] !== $akhir['kondisi_fisik']);
+
+                        if ($awal && $akhir) {
+                            if ($is_degraded) {
+                                $summary_label = 'Kondisi menurun: ' . $awal['kondisi_fisik'] . ' -> ' . $akhir['kondisi_fisik'];
+                                $summary_icon = 'alert-triangle';
+                            } elseif ($is_changed) {
+                                $summary_label = 'Kondisi berubah: ' . $awal['kondisi_fisik'] . ' -> ' . $akhir['kondisi_fisik'];
+                                $summary_icon = 'info';
+                            } else {
+                                $summary_label = 'Kondisi tetap ' . $akhir['kondisi_fisik'];
+                                $summary_icon = 'check-circle';
+                            }
+                        } elseif ($awal) {
+                            $summary_label = 'Menunggu inspeksi pengembalian';
+                            $summary_icon = 'clock';
+                        } else {
+                            $summary_label = 'Hanya inspeksi akhir';
+                            $summary_icon = 'info';
+                        }
+                        ?>
                         <tr>
-                            <td class="pk-nowrap" data-label="Tanggal">
-                                <strong>#<?= (int)$row['id_inspeksi'] ?></strong> &bull;
-                                <span class="text-muted"><?= e(format_tanggal($row['waktu_inspeksi'])) ?></span>
-                            </td>
                             <td class="pk-td-head">
                                 <div class="pk-td-head-row">
                                     <div class="pk-td-head-main">
-                                        <strong class="pk-nowrap"><?= e($row['kode_booking']) ?></strong>
-                                        <div class="pk-mobile-inline"><br><?= e($row['nama_alat']) ?></div>
+                                        <span class="pk-code-tag"><?= e($log['kode_booking']) ?></span>
+                                        <div class="mt-1"><strong><?= e($log['nama_alat']) ?></strong></div>
+                                        <div class="pk-td-sub mt-1">Peminjam: <?= e($log['nama_peminjam']) ?></div>
+                                        <div class="pk-td-sub"><?= e(format_tanggal($log['tgl_mulai'])) ?> &ndash; <?= e(format_tanggal($log['tgl_selesai'])) ?></div>
+                                        <div class="pk-inspect-summary<?= $is_degraded ? ' is-changed' : '' ?> mt-2">
+                                            <?= svg_icon($summary_icon, 13) ?>
+                                            <span><?= e($summary_label) ?></span>
+                                        </div>
                                     </div>
-                                    <span class="pk-mobile-badge">
-                                        <?php if ($row['kondisi_fisik'] === 'Baik'): ?>
-                                            <span class="pk-badge pk-badge--success">Baik</span>
-                                        <?php elseif ($row['kondisi_fisik'] === 'Rusak Ringan'): ?>
-                                            <span class="pk-badge pk-badge--warning">Rusak Ringan</span>
-                                        <?php else: ?>
-                                            <span class="pk-badge pk-badge--danger">Rusak Berat</span>
-                                        <?php endif; ?>
-                                    </span>
+                                    <?php if ($latest): ?>
+                                        <span class="pk-mobile-badge">
+                                            <?= badge_kondisi_fisik($latest['kondisi_fisik']) ?>
+                                        </span>
+                                    <?php endif; ?>
                                 </div>
                             </td>
-                            <td class="pk-desktop-cell" data-label="Alat"><strong><?= e($row['nama_alat']) ?></strong></td>
-                            <td data-label="Peminjam"><?= e($row['nama_peminjam']) ?></td>
-                            <td data-label="Tahap">
-                                <span class="pk-badge <?= $row['jenis_inspeksi'] === 'Akhir' ? 'pk-badge--primary' : 'pk-badge--muted' ?>">
-                                    <?= e($row['jenis_inspeksi']) ?>
-                                </span>
-                            </td>
-                            <td class="pk-desktop-cell" data-label="Kondisi">
-                                <?php if ($row['kondisi_fisik'] === 'Baik'): ?>
-                                    <span class="pk-badge pk-badge--success">Baik</span>
-                                <?php elseif ($row['kondisi_fisik'] === 'Rusak Ringan'): ?>
-                                    <span class="pk-badge pk-badge--warning">Rusak Ringan</span>
-                                <?php else: ?>
-                                    <span class="pk-badge pk-badge--danger">Rusak Berat</span>
-                                <?php endif; ?>
-                            </td>
-                            <td data-label="Catatan">
-                                <div><?= e($row['catatan_inspeksi']) ?></div>
-                                <div class="text-muted mt-1" style="font-size:0.82rem;">Petugas: <?= e($row['nama_petugas']) ?></div>
+                            <td class="pk-td-compare">
+                                <div class="pk-inspect-compare">
+                                    <?php if ($awal): ?>
+                                        <div class="pk-inspect-pane pk-inspect-pane--awal">
+                                            <div class="pk-inspect-pane-head">
+                                                <span class="pk-inspect-stage">
+                                                    <span class="pk-inspect-step-dot" aria-hidden="true"></span>
+                                                    <span>Awal (Serah) &bull; #<?= (int)$awal['id_inspeksi'] ?></span>
+                                                </span>
+                                                <?= badge_kondisi_fisik($awal['kondisi_fisik']) ?>
+                                            </div>
+                                            <p class="pk-inspect-note"><?= e($awal['catatan_inspeksi']) ?></p>
+                                            <div class="pk-inspect-meta">
+                                                <span>Petugas: <?= e($awal['nama_petugas']) ?></span>
+                                                <span><?= e(format_tanggal($awal['waktu_inspeksi'])) ?>, <?= e(date('H:i', strtotime($awal['waktu_inspeksi']))) ?></span>
+                                            </div>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="pk-inspect-pane pk-inspect-pane--empty">
+                                            <span class="pk-inspect-stage">Awal (Serah)</span>
+                                            <p class="pk-inspect-note text-muted">Data inspeksi awal tidak tercatat.</p>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <div class="pk-inspect-arrow<?= $is_degraded ? ' pk-inspect-arrow--changed' : '' ?>" aria-hidden="true">
+                                        <?= svg_icon('arrow-right', 16) ?>
+                                    </div>
+
+                                    <?php if ($akhir): ?>
+                                        <div class="pk-inspect-pane pk-inspect-pane--akhir<?= $is_degraded ? ' pk-inspect-pane--changed' : '' ?>">
+                                            <div class="pk-inspect-pane-head">
+                                                <span class="pk-inspect-stage">
+                                                    <span class="pk-inspect-step-dot" aria-hidden="true"></span>
+                                                    <span>Akhir (Kembali) &bull; #<?= (int)$akhir['id_inspeksi'] ?></span>
+                                                </span>
+                                                <?= badge_kondisi_fisik($akhir['kondisi_fisik']) ?>
+                                            </div>
+                                            <p class="pk-inspect-note"><?= e($akhir['catatan_inspeksi']) ?></p>
+                                            <div class="pk-inspect-meta">
+                                                <span>Petugas: <?= e($akhir['nama_petugas']) ?></span>
+                                                <span><?= e(format_tanggal($akhir['waktu_inspeksi'])) ?>, <?= e(date('H:i', strtotime($akhir['waktu_inspeksi']))) ?></span>
+                                            </div>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="pk-inspect-pane pk-inspect-pane--empty">
+                                            <span class="pk-inspect-stage">Akhir (Kembali)</span>
+                                            <p class="pk-inspect-note text-muted">Menunggu inspeksi pengembalian.</p>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                         </tr>
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
                 </tbody>
             </table>
         </div>

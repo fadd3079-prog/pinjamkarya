@@ -8,30 +8,17 @@ function is_nav_active(string $needle, string $current): string {
 }
 ?>
 <aside class="pk-sidebar" id="pkSidebar" aria-label="Navigasi Utama">
-    <div>
-        <div class="pk-sidebar-header">
-            <span class="fw-bold">Menu Navigasi</span>
-            <button type="button" class="pk-sidebar-close" id="pkSidebarClose" aria-label="Tutup navigasi">
-                <?= svg_icon('x', 18) ?>
-            </button>
-        </div>
+    <div class="pk-sidebar-header">
+        <a href="<?= BASE_URL . ($user ? '/dashboard.php' : '/index.php') ?>" class="pk-brand pk-sidebar-brand" aria-label="PinjamKarya, beranda">
+            <span class="pk-brand-icon"><?= brand_logo('light', 18) ?></span>
+            <span>PinjamKarya</span>
+        </a>
+        <button type="button" class="pk-sidebar-close" id="pkSidebarClose" aria-label="Tutup navigasi">
+            <?= svg_icon('x', 18) ?>
+        </button>
+    </div>
 
-        <?php if ($user): ?>
-            <a href="<?= BASE_URL ?>/auth/profil.php" class="pk-sidebar-account">
-                <div class="pk-sidebar-account-main">
-                    <strong><?= e($user['nama']) ?></strong>
-                    <div class="d-flex align-center gap-2 flex-wrap mt-1">
-                        <span class="pk-role-tag"><?= e($user['role']) ?></span>
-                        <?php if ($role === 'warga'): ?>
-                            <span class="pk-sidebar-score">Skor <?= (int)$user['skor_kredibilitas'] ?></span>
-                        <?php endif; ?>
-                    </div>
-                </div>
-                <?= svg_icon('user', 16) ?>
-            </a>
-        <?php endif; ?>
-
-        <nav aria-label="Menu PinjamKarya">
+    <nav class="pk-sidebar-nav" aria-label="Menu PinjamKarya">
             <div class="pk-nav-group">
                 <ul class="pk-nav-list">
                     <li>
@@ -188,13 +175,37 @@ function is_nav_active(string $needle, string $current): string {
             </div>
             <?php endif; ?>
         </nav>
-    </div>
 
     <?php if ($user): ?>
         <div class="pk-sidebar-footer">
-            <a href="<?= BASE_URL ?>/auth/logout.php" class="btn btn-outline w-100">
+            <a href="<?= BASE_URL ?>/auth/profil.php" class="pk-sidebar-account" title="<?= e($user['nama']) ?> (Profil)">
+                <div class="pk-sidebar-account-avatar" aria-hidden="true">
+                    <?= svg_icon('user', 16) ?>
+                </div>
+                <div class="pk-sidebar-account-main">
+                    <strong><?= e(format_nama_pengguna((string)$user['nama'])) ?></strong>
+                    <div class="pk-sidebar-account-meta">
+                        <?= render_role_badge($user) ?>
+                        <?php if ($role === 'warga'): ?>
+                            <span class="pk-sidebar-score">Skor <?= (int)$user['skor_kredibilitas'] ?></span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </a>
+            <a href="<?= BASE_URL ?>/index.php" class="btn btn-muted pk-sidebar-landing w-100">
+                <?= svg_icon('globe', 16) ?>
+                <span>Ke Landing Page</span>
+            </a>
+            <a href="<?= BASE_URL ?>/auth/logout.php" class="btn btn-outline pk-sidebar-logout w-100">
                 <?= svg_icon('log-out', 16) ?>
                 <span>Keluar Akun</span>
+            </a>
+        </div>
+    <?php else: ?>
+        <div class="pk-sidebar-footer">
+            <a href="<?= BASE_URL ?>/index.php" class="btn btn-muted pk-sidebar-landing w-100">
+                <?= svg_icon('globe', 16) ?>
+                <span>Ke Landing Page</span>
             </a>
         </div>
     <?php endif; ?>

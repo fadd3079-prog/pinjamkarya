@@ -22,11 +22,13 @@ mysqli_stmt_execute($stmt);
 $alat = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
 mysqli_stmt_close($stmt);
 
-if (!$alat || $alat['status_alat'] === 'Menunggu Verifikasi') {
+if (!$alat) {
     set_flash('danger', 'Unit perkakas tidak ditemukan.');
     header('Location: ' . BASE_URL . '/katalog/index.php');
     exit;
 }
+
+$is_tersedia = ($alat['status_alat'] === 'Tersedia');
 
 $sql_jadwal = "SELECT p.kode_booking, p.tgl_mulai, p.tgl_selesai, p.status_peminjaman, u.nama AS nama_peminjam
                FROM peminjaman p
@@ -53,7 +55,7 @@ if ($tgl_mulai_q !== '' && $tgl_selesai_q !== '') {
 }
 
 $page_title = $alat['nama_alat'];
-$public_layout = true;
+$public_layout = !isset($_SESSION['user']);
 $public_nav_active = 'katalog';
 require_once ROOT_PATH . '/includes/header.php';
 ?>
@@ -66,14 +68,19 @@ require_once ROOT_PATH . '/includes/header.php';
 <div class="pk-grid pk-grid--2">
     <div>
         <section class="pk-card" aria-labelledby="spesifikasi-heading">
-            <div class="pk-tool-media pk-tool-media--framed mb-3">
+            <div class="pk-tool-media pk-tool-media--framed<?= !$is_tersedia ? ' is-unavailable' : '' ?> mb-3">
                 <img src="<?= e(get_gambar_alat($alat['foto_alat'], $alat['nama_alat'])) ?>"
                      alt="<?= e($alat['nama_alat']) ?>"
                      width="640"
                      height="400">
                 <div class="pk-tool-badges">
-                    <span class="pk-badge pk-badge--primary"><?= e($alat['nama_kategori']) ?></span>
-                    <?= badge_status_alat($alat['status_alat']) ?>
+                    <span class="pk-tag"><?= e($alat['nama_kategori']) ?></span>
+                    <div class="pk-td-val">
+                        <?php if (!$is_tersedia): ?>
+                            <span class="pk-badge pk-badge--unavailable">Tidak Tersedia</span>
+                        <?php endif; ?>
+                        <?= badge_status_alat($alat['status_alat']) ?>
+                    </div>
                 </div>
             </div>
 
@@ -111,10 +118,9 @@ require_once ROOT_PATH . '/includes/header.php';
                 </li>
             </ul>
 
-            <?php if ($alat['status_alat'] === 'Perawatan'): ?>
-                <div class="pk-alert pk-alert--danger mb-0">
-                    <div>Unit sedang dalam perawatan dan belum dapat dipesan.</div>
-                </div>
+            <?php if (!$is_tersedia): ?>
+                <?= render_alert('warning', 'Tidak tersedia: unit berstatus ' . $alat['status_alat'] . '.', false, '', 'mb-2') ?>
+                <button type="button" class="btn btn-muted w-100" disabled>Tidak Tersedia</button>
             <?php else: ?>
                 <a href="<?= e($reservasi_url) ?>" class="btn btn-primary w-100">
                     <?= svg_icon('calendar', 16) ?>

@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($user && password_verify($password, $user['password'])) {
             unset($user['password']);
             $_SESSION['user'] = $user;
-            set_flash('success', 'Selamat datang, ' . $user['nama'] . '.');
+            set_flash('success', 'Selamat datang, ' . format_nama_pengguna((string)$user['nama']) . '.');
             header('Location: ' . BASE_URL . '/dashboard.php');
             exit;
         } else {

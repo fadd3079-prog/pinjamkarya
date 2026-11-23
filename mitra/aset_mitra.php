@@ -10,6 +10,7 @@ if (empty($_SESSION['user']['is_kontributor'])) {
 }
 
 $id_mitra = (int)$_SESSION['user']['id_user'];
+$modal_fb = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id_kategori = (int)($_POST['id_kategori'] ?? 0);
@@ -22,18 +23,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $status_awal = 'Menunggu Verifikasi';
 
     if ($nama_alat === '' || $deskripsi === '' || $id_kategori <= 0 || $harga_beli_baru <= 0) {
-        set_flash('warning', 'Mohon lengkapi nama alat, kategori, harga baru, dan deskripsi.');
+        $modal_fb = ['type' => 'warning', 'message' => 'Mohon lengkapi nama alat, kategori, harga baru, dan deskripsi.'];
     } else {
         $kontak_res = lengkapi_kontak_user($conn, $_SESSION['user'], $_POST);
         if (!$kontak_res['ok']) {
-            set_flash('warning', $kontak_res['message']);
+            $modal_fb = ['type' => 'warning', 'message' => $kontak_res['message']];
         } else {
             $foto_filename = 'default_alat.jpg';
             $upload_ok = true;
             if (isset($_FILES['foto_alat']) && $_FILES['foto_alat']['error'] !== UPLOAD_ERR_NO_FILE) {
                 $up = upload_gambar($_FILES['foto_alat'], UPLOAD_ALAT_PATH, 'mitra_');
                 if (!$up['success']) {
-                    set_flash('danger', $up['message']);
+                    $modal_fb = ['type' => 'danger', 'message' => $up['message']];
                     $upload_ok = false;
                 } else {
                     $foto_filename = $up['filename'];
@@ -53,6 +54,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
+$modal_open = ($modal_fb !== null) || isset($_GET['open']);
+$form_val = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : [];
 
 $res_kat = mysqli_query($conn, 'SELECT id_kategori, nama_kategori FROM kategori_alat ORDER BY nama_kategori ASC');
 
@@ -82,69 +86,191 @@ require_once ROOT_PATH . '/includes/header.php';
 
 <div class="pk-page-header">
     <h1>Alat Titipan Saya</h1>
-    <a href="<?= BASE_URL ?>/admin/riwayat_inspeksi.php" class="btn btn-outline">
-        <?= svg_icon('clipboard', 16) ?>
-        <span>Log Inspeksi</span>
-    </a>
+    <div class="btn-group-wrap">
+        <button type="button" class="btn btn-primary" data-modal-target="#modalTitipAset">
+            <?= svg_icon('plus', 16) ?>
+            <span>Titip Perkakas</span>
+        </button>
+        <a href="<?= BASE_URL ?>/admin/riwayat_inspeksi.php" class="btn btn-outline">
+            <?= svg_icon('clipboard', 16) ?>
+            <span>Log Inspeksi</span>
+        </a>
+    </div>
 </div>
 
-<div class="pk-grid pk-grid--2">
-    <section class="pk-card" aria-labelledby="titip-heading">
+<section class="pk-table-card" aria-labelledby="daftar-titipan-heading">
+    <div class="pk-table-card-head">
+        <h2 id="daftar-titipan-heading" class="pk-card-title">
+            <?= svg_icon('box', 18) ?>
+            <span>Daftar Alat Saya</span>
+        </h2>
+    </div>
+
+    <?php if (mysqli_num_rows($res_mitra_alat) === 0): ?>
+        <div class="pk-empty-state">
+            <div class="pk-empty-icon"><?= svg_icon('box', 22) ?></div>
+            <h3>Belum Ada Alat Titipan</h3>
+        </div>
+    <?php else: ?>
+        <div class="pk-table-scroll">
+            <table class="pk-table">
+                <thead>
+                    <tr>
+                        <th>Alat</th>
+                        <th>Ketentuan</th>
+                        <th>Status</th>
+                        <th>Selesai</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php while ($a = mysqli_fetch_assoc($res_mitra_alat)): ?>
+                        <tr>
+                            <td class="pk-td-head">
+                                <div class="pk-td-head-row">
+                                    <div class="pk-td-head-main">
+                                        <strong><?= e($a['nama_alat']) ?></strong><br>
+                                        <span class="pk-td-sub"><?= e($a['nama_kategori']) ?></span>
+                                    </div>
+                                    <span class="pk-mobile-badge"><?= badge_status_alat($a['status_alat']) ?></span>
+                                </div>
+                            </td>
+                            <td data-label="Ketentuan">
+                                Maks <?= (int)$a['max_hari_pinjam'] ?> hr &bull; Skor &ge; <?= (int)$a['min_skor'] ?>
+                            </td>
+                            <td class="pk-desktop-cell" data-label="Status"><?= badge_status_alat($a['status_alat']) ?></td>
+                            <td data-label="Dipinjam"><strong><?= (int)$a['total_dipinjam'] ?>x</strong></td>
+                        </tr>
+                    <?php endwhile; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+</section>
+
+<section class="pk-table-card" aria-labelledby="riwayat-pakai-heading">
+    <div class="pk-table-card-head">
+        <h2 id="riwayat-pakai-heading" class="pk-card-title">
+            <?= svg_icon('calendar', 18) ?>
+            <span>Riwayat Peminjaman</span>
+        </h2>
+    </div>
+
+    <?php if (mysqli_num_rows($res_hist) === 0): ?>
+        <div class="pk-empty-state">
+            <div class="text-muted">Belum ada transaksi peminjaman.</div>
+        </div>
+    <?php else: ?>
+        <div class="pk-table-scroll">
+            <table class="pk-table">
+                <thead>
+                    <tr>
+                        <th>Kode</th>
+                        <th>Alat &amp; Peminjam</th>
+                        <th>Jadwal</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php while ($h = mysqli_fetch_assoc($res_hist)): ?>
+                        <tr>
+                            <td class="pk-td-head">
+                                <div class="pk-td-head-row">
+                                    <div class="pk-td-head-main">
+                                        <strong><?= e($h['kode_booking']) ?></strong>
+                                        <div class="pk-mobile-inline"><br><?= e($h['nama_alat']) ?></div>
+                                    </div>
+                                    <span class="pk-mobile-badge"><?= badge_status_pinjam($h['status_peminjaman']) ?></span>
+                                </div>
+                            </td>
+                            <td data-label="Peminjam">
+                                <span class="pk-desktop-only-inline"><?= e($h['nama_alat']) ?><br></span>
+                                <span><?= e($h['nama_peminjam']) ?></span>
+                            </td>
+                            <td data-label="Jadwal"><?= e(format_tanggal($h['tgl_mulai'])) ?> - <?= e(format_tanggal($h['tgl_selesai'])) ?></td>
+                            <td class="pk-desktop-cell" data-label="Status"><?= badge_status_pinjam($h['status_peminjaman']) ?></td>
+                        </tr>
+                    <?php endwhile; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+</section>
+
+<div id="modalTitipAset"
+    class="pk-modal<?= $modal_open ? ' open' : '' ?>"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="titip-heading"
+    aria-hidden="<?= $modal_open ? 'false' : 'true' ?>">
+    <div class="pk-modal-dialog pk-modal-dialog--wide">
         <div class="pk-card-header">
             <h2 id="titip-heading" class="pk-card-title">
                 <?= svg_icon('plus', 18) ?>
                 <span>Titip Perkakas Baru</span>
             </h2>
+            <button type="button" class="btn btn-muted btn-icon" data-modal-close aria-label="Tutup form">
+                <?= svg_icon('x', 16) ?>
+            </button>
         </div>
 
-        <form method="post" action="<?= BASE_URL ?>/mitra/aset_mitra.php" enctype="multipart/form-data">
-            <div class="form-group">
-                <label for="nama_alat" class="form-label">Nama &amp; Merek Alat</label>
-                <input type="text" id="nama_alat" name="nama_alat" class="form-control" required>
-            </div>
+        <?php if ($modal_fb): ?>
+            <?= render_alert((string)$modal_fb['type'], (string)$modal_fb['message']) ?>
+        <?php endif; ?>
 
-            <div class="form-group">
-                <label for="id_kategori" class="form-label">Kategori</label>
-                <select id="id_kategori" name="id_kategori" class="form-select" required>
-                    <option value="">Pilih Kategori</option>
-                    <?php while ($k = mysqli_fetch_assoc($res_kat)): ?>
-                        <option value="<?= (int)$k['id_kategori'] ?>"><?= e($k['nama_kategori']) ?></option>
-                    <?php endwhile; ?>
-                </select>
+        <form method="post" action="<?= BASE_URL ?>/mitra/aset_mitra.php" enctype="multipart/form-data">
+            <div class="pk-grid pk-grid--2">
+                <div class="form-group">
+                    <label for="nama_alat" class="form-label">Nama &amp; Merek Alat</label>
+                    <input type="text" id="nama_alat" name="nama_alat" class="form-control" value="<?= e($form_val['nama_alat'] ?? '') ?>" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="id_kategori" class="form-label">Kategori</label>
+                    <select id="id_kategori" name="id_kategori" class="form-select" required>
+                        <option value="">Pilih Kategori</option>
+                        <?php while ($k = mysqli_fetch_assoc($res_kat)): ?>
+                            <option value="<?= (int)$k['id_kategori'] ?>" <?= ((int)($form_val['id_kategori'] ?? 0) === (int)$k['id_kategori']) ? 'selected' : '' ?>>
+                                <?= e($k['nama_kategori']) ?>
+                            </option>
+                        <?php endwhile; ?>
+                    </select>
+                </div>
             </div>
 
             <div class="pk-grid pk-grid--2">
                 <div class="form-group">
                     <label for="harga_beli_baru" class="form-label">Harga Baru (Rp)</label>
-                    <input type="number" step="1000" min="10000" id="harga_beli_baru" name="harga_beli_baru" class="form-control" required>
+                    <input type="number" step="1000" min="10000" id="harga_beli_baru" name="harga_beli_baru" class="form-control" value="<?= e($form_val['harga_beli_baru'] ?? '') ?>" required>
                 </div>
 
                 <div class="form-group">
                     <label for="biaya_perawatan" class="form-label">Biaya Rawat (Rp)</label>
-                    <input type="number" step="500" min="0" id="biaya_perawatan" name="biaya_perawatan" class="form-control" value="0" required>
+                    <input type="number" step="500" min="0" id="biaya_perawatan" name="biaya_perawatan" class="form-control" value="<?= e($form_val['biaya_perawatan'] ?? '0') ?>" required>
                 </div>
             </div>
 
             <div class="pk-grid pk-grid--2">
                 <div class="form-group">
                     <label for="max_hari_pinjam" class="form-label">Maks. Pinjam (Hari)</label>
-                    <input type="number" min="1" max="14" id="max_hari_pinjam" name="max_hari_pinjam" class="form-control" value="3" required>
+                    <input type="number" min="1" max="14" id="max_hari_pinjam" name="max_hari_pinjam" class="form-control" value="<?= e($form_val['max_hari_pinjam'] ?? '3') ?>" required>
                 </div>
 
                 <div class="form-group">
                     <label for="min_skor" class="form-label">Skor Minimal</label>
-                    <input type="number" min="50" max="150" id="min_skor" name="min_skor" class="form-control" value="80" required>
+                    <input type="number" min="50" max="150" id="min_skor" name="min_skor" class="form-control" value="<?= e($form_val['min_skor'] ?? '80') ?>" required>
                 </div>
             </div>
 
-            <div class="form-group">
-                <label for="deskripsi" class="form-label">Spesifikasi &amp; Kelengkapan</label>
-                <textarea id="deskripsi" name="deskripsi" class="form-control" required></textarea>
-            </div>
+            <div class="pk-grid pk-grid--2">
+                <div class="form-group">
+                    <label for="deskripsi" class="form-label">Spesifikasi &amp; Kelengkapan</label>
+                    <textarea id="deskripsi" name="deskripsi" class="form-control" required><?= e($form_val['deskripsi'] ?? '') ?></textarea>
+                </div>
 
-            <div class="form-group">
-                <label for="foto_alat" class="form-label">Foto Alat (Opsional, maks. 2 MB)</label>
-                <input type="file" id="foto_alat" name="foto_alat" class="form-control" accept=".jpg,.jpeg,.png,.webp">
+                <div class="form-group">
+                    <label for="foto_alat" class="form-label">Foto Alat (Opsional, maks. 2 MB)</label>
+                    <input type="file" id="foto_alat" name="foto_alat" class="form-control" accept=".jpg,.jpeg,.png,.webp">
+                </div>
             </div>
 
             <?= render_kontak_fields_if_needed($_SESSION['user'], $_POST) ?>
@@ -154,106 +280,6 @@ require_once ROOT_PATH . '/includes/header.php';
                 <span>Ajukan Titip Alat</span>
             </button>
         </form>
-    </section>
-
-    <div>
-        <section class="pk-table-card" aria-labelledby="daftar-titipan-heading">
-            <div class="pk-table-card-head">
-                <h2 id="daftar-titipan-heading" class="pk-card-title">
-                    <?= svg_icon('box', 18) ?>
-                    <span>Daftar Alat Saya</span>
-                </h2>
-            </div>
-
-            <?php if (mysqli_num_rows($res_mitra_alat) === 0): ?>
-                <div class="pk-empty-state">
-                    <div class="pk-empty-icon"><?= svg_icon('box', 22) ?></div>
-                    <h3>Belum Ada Alat Titipan</h3>
-                </div>
-            <?php else: ?>
-                <div class="pk-table-scroll">
-                    <table class="pk-table">
-                        <thead>
-                            <tr>
-                                <th>Alat</th>
-                                <th>Ketentuan</th>
-                                <th>Status</th>
-                                <th>Selesai</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php while ($a = mysqli_fetch_assoc($res_mitra_alat)): ?>
-                                <tr>
-                                    <td class="pk-td-head">
-                                        <div class="pk-td-head-row">
-                                            <div class="pk-td-head-main">
-                                                <strong><?= e($a['nama_alat']) ?></strong><br>
-                                                <span class="text-muted" style="font-size:0.82rem;"><?= e($a['nama_kategori']) ?></span>
-                                            </div>
-                                            <span class="pk-mobile-badge"><?= badge_status_alat($a['status_alat']) ?></span>
-                                        </div>
-                                    </td>
-                                    <td data-label="Ketentuan">
-                                        Maks <?= (int)$a['max_hari_pinjam'] ?> hr &bull; Skor &ge; <?= (int)$a['min_skor'] ?>
-                                    </td>
-                                    <td class="pk-desktop-cell" data-label="Status"><?= badge_status_alat($a['status_alat']) ?></td>
-                                    <td data-label="Dipinjam"><strong><?= (int)$a['total_dipinjam'] ?>x</strong></td>
-                                </tr>
-                            <?php endwhile; ?>
-                        </tbody>
-                    </table>
-                </div>
-            <?php endif; ?>
-        </section>
-
-        <section class="pk-table-card" aria-labelledby="riwayat-pakai-heading">
-            <div class="pk-table-card-head">
-                <h2 id="riwayat-pakai-heading" class="pk-card-title">
-                    <?= svg_icon('calendar', 18) ?>
-                    <span>Riwayat Peminjaman</span>
-                </h2>
-            </div>
-
-            <?php if (mysqli_num_rows($res_hist) === 0): ?>
-                <div class="pk-empty-state">
-                    <div class="text-muted">Belum ada transaksi peminjaman.</div>
-                </div>
-            <?php else: ?>
-                <div class="pk-table-scroll">
-                    <table class="pk-table">
-                        <thead>
-                            <tr>
-                                <th>Kode</th>
-                                <th>Alat &amp; Peminjam</th>
-                                <th>Jadwal</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php while ($h = mysqli_fetch_assoc($res_hist)): ?>
-                                <tr>
-                                    <td class="pk-td-head">
-                                        <div class="pk-td-head-row">
-                                            <div class="pk-td-head-main">
-                                                <strong><?= e($h['kode_booking']) ?></strong>
-                                                <div class="pk-mobile-inline"><br><?= e($h['nama_alat']) ?></div>
-                                            </div>
-                                            <span class="pk-mobile-badge"><?= badge_status_pinjam($h['status_peminjaman']) ?></span>
-                                        </div>
-                                    </td>
-                                    <td data-label="Peminjam">
-                                        <span class="pk-desktop-only-inline"><?= e($h['nama_alat']) ?><br></span>
-                                        <span><?= e($h['nama_peminjam']) ?></span>
-                                    </td>
-                                    <td data-label="Jadwal"><?= e(format_tanggal($h['tgl_mulai'])) ?> - <?= e(format_tanggal($h['tgl_selesai'])) ?></td>
-                                    <td class="pk-desktop-cell" data-label="Status"><?= badge_status_pinjam($h['status_peminjaman']) ?></td>
-                                </tr>
-                            <?php endwhile; ?>
-                        </tbody>
-                    </table>
-                </div>
-            <?php endif; ?>
-        </section>
     </div>
 </div>
 

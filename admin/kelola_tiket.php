@@ -84,37 +84,42 @@ require_once ROOT_PATH . '/includes/header.php';
                 </tr>
             </thead>
             <tbody>
-                <?php while ($row = mysqli_fetch_assoc($res_all)): ?>
-                    <?php
-                    $has_teknisi = !empty($row['nama_teknisi']);
-                    $has_diag = !empty($row['diagnosis_teknisi']);
-                    $has_ticket_action = ($row['status_tiket'] === 'Siap Diambil' || ($row['status_tiket'] === 'Menunggu Persetujuan' && !empty($row['id_alat_hub'])));
-                    ?>
+                <?php if (mysqli_num_rows($res_all) === 0): ?>
                     <tr>
-                        <td class="pk-td-head">
-                            <div class="pk-td-head-row">
-                                <div class="pk-td-head-main">
-                                    <strong class="pk-nowrap"><?= e($row['kode_tiket']) ?></strong>
-                                    <div class="pk-mobile-inline"><br><strong><?= e($row['nama_barang']) ?></strong></div>
-                                    <div class="text-muted" style="font-size:0.82rem;"><?= e(format_tanggal($row['created_at'])) ?></div>
+                        <td colspan="7" class="text-center text-muted">Belum ada tiket perbaikan.</td>
+                    </tr>
+                <?php else: ?>
+                    <?php while ($row = mysqli_fetch_assoc($res_all)): ?>
+                        <?php
+                        $has_teknisi = !empty($row['nama_teknisi']);
+                        $has_diag = !empty($row['diagnosis_teknisi']);
+                        $has_ticket_action = ($row['status_tiket'] === 'Siap Diambil' || ($row['status_tiket'] === 'Menunggu Persetujuan' && !empty($row['id_alat_hub'])));
+                        ?>
+                        <tr>
+                            <td class="pk-td-head">
+                                <div class="pk-td-head-row">
+                                    <div class="pk-td-head-main">
+                                        <span class="pk-code-tag"><?= e($row['kode_tiket']) ?></span>
+                                        <div class="pk-mobile-inline"><br><strong><?= e($row['nama_barang']) ?></strong></div>
+                                        <div class="pk-td-sub mt-1"><?= e(format_tanggal($row['created_at'])) ?></div>
+                                    </div>
+                                    <span class="pk-mobile-badge"><?= badge_status_tiket($row['status_tiket']) ?></span>
                                 </div>
-                                <span class="pk-mobile-badge"><?= badge_status_tiket($row['status_tiket']) ?></span>
-                            </div>
-                        </td>
-                        <td data-label="Kategori">
-                            <strong class="pk-desktop-only-inline"><?= e($row['nama_barang']) ?><br></strong>
-                            <div class="pk-td-val">
-                                <span class="pk-badge pk-badge--muted"><?= e($row['nama_kategori']) ?></span>
-                                <?php if (!empty($row['id_alat_hub'])): ?>
-                                    <span class="pk-badge pk-badge--danger">Aset Hub #<?= (int)$row['id_alat_hub'] ?></span>
-                                <?php endif; ?>
-                            </div>
-                        </td>
+                            </td>
+                            <td data-label="Kategori">
+                                <strong class="pk-desktop-only-inline"><?= e($row['nama_barang']) ?><br></strong>
+                                <div class="pk-td-val mt-1">
+                                    <span class="pk-tag"><?= e($row['nama_kategori']) ?></span>
+                                    <?php if (!empty($row['id_alat_hub'])): ?>
+                                        <span class="pk-tag pk-tag--accent">Aset Hub #<?= (int)$row['id_alat_hub'] ?></span>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
                         <td data-label="Pelapor">
-                            <strong><?= e($row['nama_pelapor']) ?></strong><br>
-                            <span class="text-muted" style="font-size:0.82rem;"><?= e($row['metode_cek']) ?></span>
+                            <strong><?= e(format_nama_pengguna((string)$row['nama_pelapor'])) ?></strong><br>
+                            <span class="pk-td-sub"><?= e($row['metode_cek']) ?></span>
                         </td>
-                        <td data-label="Teknisi" class="<?= $has_teknisi ? '' : 'is-empty-mobile' ?>"><?= $has_teknisi ? e($row['nama_teknisi']) : '<span class="text-muted">-</span>' ?></td>
+                        <td data-label="Teknisi" class="<?= $has_teknisi ? '' : 'is-empty-mobile' ?>"><?= $has_teknisi ? e(format_nama_pengguna((string)$row['nama_teknisi'])) : '<span class="text-muted">-</span>' ?></td>
                         <td data-label="Diagnosis" class="<?= $has_diag ? '' : 'is-empty-mobile' ?>">
                             <?php if ($has_diag): ?>
                                 <div><?= e($row['diagnosis_teknisi']) ?></div>
@@ -126,7 +131,7 @@ require_once ROOT_PATH . '/includes/header.php';
                         <td class="pk-desktop-cell" data-label="Status"><?= badge_status_tiket($row['status_tiket']) ?></td>
                         <td class="pk-td-actions<?= $has_ticket_action ? '' : ' is-empty' ?>">
                             <?php if ($row['status_tiket'] === 'Siap Diambil'): ?>
-                                <form method="post" action="<?= BASE_URL ?>/admin/kelola_tiket.php">
+                                <form method="post" action="<?= BASE_URL ?>/admin/kelola_tiket.php" data-confirm="Tandai tiket <?= e($row['kode_tiket']) ?> selesai?" data-confirm-title="Selesaikan Tiket" data-confirm-btn="Selesai" data-confirm-tone="ok">
                                     <input type="hidden" name="action" value="confirm_complete">
                                     <input type="hidden" name="id_tiket" value="<?= (int)$row['id_tiket'] ?>">
                                     <button type="submit" class="btn btn-secondary btn-icon" title="Tandai Selesai" aria-label="Tandai Selesai <?= e($row['kode_tiket']) ?>">
@@ -134,7 +139,7 @@ require_once ROOT_PATH . '/includes/header.php';
                                     </button>
                                 </form>
                             <?php elseif ($row['status_tiket'] === 'Menunggu Persetujuan' && !empty($row['id_alat_hub'])): ?>
-                                <form method="post" action="<?= BASE_URL ?>/admin/kelola_tiket.php">
+                                <form method="post" action="<?= BASE_URL ?>/admin/kelola_tiket.php" data-confirm="Setujui estimasi perbaikan aset hub <?= e($row['kode_tiket']) ?>?" data-confirm-title="Setujui Biaya" data-confirm-btn="Setujui" data-confirm-tone="primary">
                                     <input type="hidden" name="action" value="approve_hub_ticket">
                                     <input type="hidden" name="id_tiket" value="<?= (int)$row['id_tiket'] ?>">
                                     <button type="submit" class="btn btn-primary">
@@ -147,6 +152,7 @@ require_once ROOT_PATH . '/includes/header.php';
                         </td>
                     </tr>
                 <?php endwhile; ?>
+                <?php endif; ?>
             </tbody>
         </table>
     </div>

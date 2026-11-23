@@ -42,10 +42,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = mysqli_prepare($conn, 'INSERT INTO users (nama, email, password, no_hp, alamat, role, is_kontributor, is_teknisi, is_verified_teknisi, skor_kredibilitas) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
             mysqli_stmt_bind_param($stmt, 'ssssssiiii', $nama, $email, $hash, $no_hp, $alamat, $role, $is_kontributor, $is_teknisi, $is_verified_teknisi, $skor_kredibilitas);
             mysqli_stmt_execute($stmt);
+            $new_user_id = (int)mysqli_insert_id($conn);
             mysqli_stmt_close($stmt);
 
-            set_flash('success', 'Pendaftaran berhasil (Modal awal: 100 Poin Skor Kepercayaan). Silakan masuk.');
-            header('Location: ' . BASE_URL . '/auth/login.php');
+            $q_user = mysqli_prepare($conn, 'SELECT id_user, nama, email, no_hp, alamat, role, is_kontributor, is_teknisi, is_verified_teknisi, skor_kredibilitas, created_at FROM users WHERE id_user = ? LIMIT 1');
+            mysqli_stmt_bind_param($q_user, 'i', $new_user_id);
+            mysqli_stmt_execute($q_user);
+            $new_user = mysqli_fetch_assoc(mysqli_stmt_get_result($q_user));
+            mysqli_stmt_close($q_user);
+
+            session_regenerate_id(true);
+            $_SESSION['user'] = $new_user ?: [
+                'id_user'             => $new_user_id,
+                'nama'                => $nama,
+                'email'               => $email,
+                'no_hp'               => $no_hp,
+                'alamat'              => $alamat,
+                'role'                => $role,
+                'is_kontributor'      => $is_kontributor,
+                'is_teknisi'          => $is_teknisi,
+                'is_verified_teknisi' => $is_verified_teknisi,
+                'skor_kredibilitas'   => $skor_kredibilitas,
+            ];
+
+            $welcome_msg = $role === 'mitra'
+                ? 'Pendaftaran akun Mitra berhasil. Selamat datang di dashboard.'
+                : 'Pendaftaran berhasil (Modal awal: 100 Poin Skor Kepercayaan). Selamat datang di dashboard.';
+            set_flash('success', $welcome_msg);
+            header('Location: ' . BASE_URL . '/dashboard.php');
             exit;
         }
     }

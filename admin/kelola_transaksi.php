@@ -85,7 +85,7 @@ require_once ROOT_PATH . '/includes/header.php';
                             <td class="pk-td-head">
                                 <div class="pk-td-head-row">
                                     <div class="pk-td-head-main">
-                                        <strong><?= e($t['kode_booking']) ?></strong>
+                                        <span class="pk-code-tag"><?= e($t['kode_booking']) ?></span>
                                         <div class="pk-mobile-inline"><br><?= e($t['nama_alat']) ?></div>
                                     </div>
                                     <span class="pk-mobile-badge"><?= badge_status_pinjam($t['status_peminjaman']) ?></span>
@@ -93,8 +93,8 @@ require_once ROOT_PATH . '/includes/header.php';
                             </td>
                             <td class="pk-desktop-cell" data-label="Perkakas"><strong><?= e($t['nama_alat']) ?></strong></td>
                             <td data-label="Peminjam">
-                                <strong><?= e($t['nama_warga']) ?></strong><br>
-                                <span class="text-muted" style="font-size:0.82rem;"><?= e($t['no_hp']) ?> &bull; Skor <?= (int)$t['skor_kredibilitas'] ?></span>
+                                <strong><?= e(format_nama_pengguna((string)$t['nama_warga'])) ?></strong><br>
+                                <span class="pk-td-sub"><?= e($t['no_hp']) ?> &bull; Skor <?= (int)$t['skor_kredibilitas'] ?></span>
                             </td>
                             <td data-label="Jadwal" class="pk-nowrap">
                                 <?= e(format_tanggal($t['tgl_mulai'])) ?> - <strong><?= e(format_tanggal($t['tgl_selesai'])) ?></strong>
@@ -107,7 +107,7 @@ require_once ROOT_PATH . '/includes/header.php';
                                             <?= svg_icon('clipboard', 16) ?>
                                             <span>Inspeksi Awal</span>
                                         </a>
-                                        <form method="post" action="<?= BASE_URL ?>/admin/kelola_transaksi.php" onsubmit="return confirm('Batalkan pesanan karena warga tidak hadir?');">
+                                        <form method="post" action="<?= BASE_URL ?>/admin/kelola_transaksi.php" data-confirm="Batalkan pesanan <?= e($t['kode_booking']) ?> (No-Show)?" data-confirm-title="Batalkan Pesanan" data-confirm-btn="Batalkan" data-confirm-tone="danger">
                                             <input type="hidden" name="action" value="cancel_noshow">
                                             <input type="hidden" name="id_peminjaman" value="<?= (int)$t['id_peminjaman'] ?>">
                                             <button type="submit" class="btn btn-danger btn-icon" title="No-Show" aria-label="Batalkan No-Show <?= e($t['kode_booking']) ?>">

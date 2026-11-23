@@ -61,7 +61,7 @@ require_once ROOT_PATH . '/includes/header.php';
             <article class="pk-card d-flex flex-column justify-between mb-0">
                 <div>
                     <div class="d-flex align-center justify-between flex-wrap gap-2 mb-2">
-                        <span class="pk-badge pk-badge--primary"><?= e($row['kode_booking']) ?></span>
+                        <span class="pk-code-tag"><?= e($row['kode_booking']) ?></span>
                         <?= badge_status_pinjam($row['status_peminjaman']) ?>
                     </div>
 
@@ -93,7 +93,7 @@ require_once ROOT_PATH . '/includes/header.php';
 
                 <div>
                     <?php if ($row['status_peminjaman'] === 'Dipesan'): ?>
-                        <form method="post" action="<?= BASE_URL ?>/reservasi/riwayat_pinjam.php" onsubmit="return confirm('Batalkan pesanan ini?');">
+                        <form method="post" action="<?= BASE_URL ?>/reservasi/riwayat_pinjam.php" data-confirm="Batalkan pesanan <?= e($row['kode_booking']) ?>?" data-confirm-title="Batalkan Pesanan" data-confirm-btn="Batalkan" data-confirm-tone="danger">
                             <input type="hidden" name="action" value="cancel_booking">
                             <input type="hidden" name="id_peminjaman" value="<?= (int)$row['id_peminjaman'] ?>">
                             <button type="submit" class="btn btn-danger w-100">
@@ -102,9 +102,7 @@ require_once ROOT_PATH . '/includes/header.php';
                             </button>
                         </form>
                     <?php elseif ($row['status_peminjaman'] === 'Dipinjam'): ?>
-                        <div class="pk-badge pk-badge--primary w-100 justify-center" style="min-height:36px;">
-                            Kembalikan maks. <?= e(format_tanggal($row['tgl_selesai'])) ?>
-                        </div>
+                        <?= render_alert('info', 'Kembalikan maks. ' . format_tanggal($row['tgl_selesai']), false, 'calendar', 'mb-0') ?>
                     <?php endif; ?>
                 </div>
             </article>

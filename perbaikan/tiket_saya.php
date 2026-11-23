@@ -74,7 +74,7 @@ function render_stepper_6_tahap(string $status): string {
     ];
 
     if ($status === 'Dibatalkan') {
-        return '<div class="pk-alert pk-alert--danger mb-2"><div>Tiket dibatalkan.</div></div>';
+        return render_alert('danger', 'Tiket perbaikan dibatalkan.', false, '', 'mb-2');
     }
 
     $current_stage = 2;
@@ -144,9 +144,9 @@ require_once ROOT_PATH . '/includes/header.php';
         <article class="pk-card mb-4">
             <div class="pk-card-header">
                 <div class="d-flex align-center gap-2 flex-wrap">
-                    <span class="pk-badge pk-badge--primary"><?= e($t['kode_tiket']) ?></span>
-                    <span class="pk-badge pk-badge--muted"><?= e($t['nama_kategori']) ?></span>
-                    <span class="pk-badge pk-badge--muted"><?= e($t['metode_cek']) ?></span>
+                    <span class="pk-code-tag"><?= e($t['kode_tiket']) ?></span>
+                    <span class="pk-tag"><?= e($t['nama_kategori']) ?></span>
+                    <span class="pk-tag"><?= e($t['metode_cek']) ?></span>
                 </div>
                 <div class="d-flex align-center gap-2">
                     <span class="text-muted" style="font-size:0.84rem;"><?= e(format_tanggal($t['created_at'])) ?></span>
@@ -179,7 +179,7 @@ require_once ROOT_PATH . '/includes/header.php';
 
                 <div>
                     <?php if ($t['status_tiket'] === 'Menunggu Persetujuan'): ?>
-                        <div class="pk-card mb-0">
+                        <div class="pk-card pk-card--notice mb-0">
                             <h3 class="mb-2">Estimasi Teknisi</h3>
                             <div class="mb-2"><?= e($t['diagnosis_teknisi']) ?></div>
                             <div class="d-flex justify-between flex-wrap gap-2 mb-3">
@@ -197,7 +197,7 @@ require_once ROOT_PATH . '/includes/header.php';
                                     </button>
                                 </form>
 
-                                <form method="post" action="<?= BASE_URL ?>/perbaikan/tiket_saya.php" onsubmit="return confirm('Tolak estimasi dan kembalikan tiket ke antrean terbuka?');">
+                                <form method="post" action="<?= BASE_URL ?>/perbaikan/tiket_saya.php" data-confirm="Tolak estimasi biaya dan kembalikan tiket ke antrean?" data-confirm-title="Tolak Estimasi" data-confirm-btn="Tolak" data-confirm-tone="danger">
                                     <input type="hidden" name="id_tiket" value="<?= (int)$t['id_tiket'] ?>">
                                     <input type="hidden" name="action" value="reject_cost">
                                     <button type="submit" class="btn btn-muted">
@@ -223,7 +223,7 @@ require_once ROOT_PATH . '/includes/header.php';
 
                     <div class="btn-group-wrap mt-3">
                         <?php if (in_array($t['status_tiket'], ['Menunggu Diagnosis', 'Menunggu Persetujuan'], true)): ?>
-                            <form method="post" action="<?= BASE_URL ?>/perbaikan/tiket_saya.php" onsubmit="return confirm('Batalkan tiket perbaikan ini?');">
+                            <form method="post" action="<?= BASE_URL ?>/perbaikan/tiket_saya.php" data-confirm="Batalkan tiket perbaikan <?= e($t['kode_tiket']) ?>?" data-confirm-title="Batalkan Tiket" data-confirm-btn="Batalkan" data-confirm-tone="danger">
                                 <input type="hidden" name="id_tiket" value="<?= (int)$t['id_tiket'] ?>">
                                 <input type="hidden" name="action" value="cancel_ticket">
                                 <button type="submit" class="btn btn-danger">
@@ -234,7 +234,7 @@ require_once ROOT_PATH . '/includes/header.php';
                         <?php endif; ?>
 
                         <?php if ($t['status_tiket'] === 'Siap Diambil'): ?>
-                            <form method="post" action="<?= BASE_URL ?>/perbaikan/tiket_saya.php">
+                            <form method="post" action="<?= BASE_URL ?>/perbaikan/tiket_saya.php" data-confirm="Konfirmasi perbaikan <?= e($t['kode_tiket']) ?> sudah diterima?" data-confirm-title="Konfirmasi Selesai" data-confirm-btn="Selesai" data-confirm-tone="primary">
                                 <input type="hidden" name="id_tiket" value="<?= (int)$t['id_tiket'] ?>">
                                 <input type="hidden" name="action" value="confirm_done">
                                 <button type="submit" class="btn btn-primary">

@@ -1,9 +1,9 @@
 <?php
 require_once __DIR__ . '/config/app.php';
 
-if (isset($_SESSION['user'])) {
-    header('Location: ' . BASE_URL . '/dashboard.php');
-    exit;
+$is_logged_in = isset($_SESSION['user']);
+if ($is_logged_in) {
+    refresh_user_session($conn);
 }
 
 bersihkan_ghost_booking($conn);
@@ -31,9 +31,8 @@ $total_penghematan = $hemat_pinjam + $hemat_servis;
 $q_preview = mysqli_query($conn, "SELECT a.*, k.nama_kategori
     FROM aset_alat a
     JOIN kategori_alat k ON a.id_kategori = k.id_kategori
-    WHERE a.status_alat = 'Tersedia'
-    ORDER BY a.id_alat ASC
-    LIMIT 3");
+    ORDER BY FIELD(a.status_alat, 'Tersedia', 'Dipinjam', 'Perawatan', 'Menunggu Verifikasi'), a.id_alat ASC
+    LIMIT 4");
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -71,8 +70,13 @@ $q_preview = mysqli_query($conn, "SELECT a.*, k.nama_kategori
                          fetchpriority="high"
                          decoding="async">
                     <div class="pk-hero-actions">
-                        <a class="btn btn-primary" href="<?= BASE_URL ?>/katalog/index.php">Lihat Katalog</a>
-                        <a class="btn btn-outline" href="<?= BASE_URL ?>/auth/login.php">Masuk / Daftar</a>
+                        <?php if ($is_logged_in): ?>
+                            <a class="btn btn-primary" href="<?= BASE_URL ?>/dashboard.php">Masuk ke Dashboard</a>
+                            <a class="btn btn-outline" href="<?= BASE_URL ?>/katalog/index.php">Lihat Katalog</a>
+                        <?php else: ?>
+                            <a class="btn btn-primary" href="<?= BASE_URL ?>/katalog/index.php">Lihat Katalog</a>
+                            <a class="btn btn-outline" href="<?= BASE_URL ?>/auth/login.php">Masuk / Daftar</a>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -117,7 +121,7 @@ $q_preview = mysqli_query($conn, "SELECT a.*, k.nama_kategori
                     <div class="pk-service-shade" aria-hidden="true"></div>
                     <div class="pk-service-body">
                         <h3 class="pk-service-title">Perbaiki Barang Rusak</h3>
-                        <a href="<?= BASE_URL ?>/auth/login.php" class="btn btn-outline">
+                        <a href="<?= BASE_URL . ($is_logged_in ? '/perbaikan/buat_tiket.php' : '/auth/login.php') ?>" class="btn btn-outline">
                             <?= svg_icon('wrench', 15) ?>
                             <span>Ajukan Perbaikan</span>
                         </a>
@@ -157,7 +161,7 @@ $q_preview = mysqli_query($conn, "SELECT a.*, k.nama_kategori
                 <a href="<?= BASE_URL ?>/katalog/index.php" class="btn btn-outline">Lihat Katalog</a>
             </div>
 
-            <div class="pk-grid pk-grid--3">
+            <div class="pk-masonry" data-masonry>
                 <?php while ($item = mysqli_fetch_assoc($q_preview)): ?>
                     <?= render_tool_card($item, BASE_URL . '/katalog/detail_alat.php?id=' . (int)$item['id_alat'], 'h3') ?>
                 <?php endwhile; ?>

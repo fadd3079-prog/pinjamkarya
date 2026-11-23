@@ -9,7 +9,7 @@ $tgl_mulai = trim($_GET['tgl_mulai'] ?? '');
 $tgl_selesai = trim($_GET['tgl_selesai'] ?? '');
 
 $res_kat = mysqli_query($conn, "SELECT k.id_kategori, k.nama_kategori,
-    (SELECT COUNT(*) FROM aset_alat a WHERE a.id_kategori = k.id_kategori AND a.status_alat IN ('Tersedia', 'Dipinjam', 'Perawatan')) AS total_alat
+    (SELECT COUNT(*) FROM aset_alat a WHERE a.id_kategori = k.id_kategori) AS total_alat
     FROM kategori_alat k
     ORDER BY k.nama_kategori ASC");
 $kategori_list = [];
@@ -19,14 +19,32 @@ while ($k = mysqli_fetch_assoc($res_kat)) {
     $total_semua += (int)$k['total_alat'];
 }
 
-$sql = "SELECT a.*, k.nama_kategori, u.nama AS nama_pemilik, u.role AS role_pemilik
+$filter_tanggal_aktif = false;
+$select_bentrok = "0 AS is_bentrok";
+$types = '';
+$params = [];
+
+if ($tgl_mulai !== '' && $tgl_selesai !== '') {
+    if ($tgl_selesai < $tgl_mulai) {
+        $tgl_selesai = $tgl_mulai;
+    }
+    $filter_tanggal_aktif = true;
+    $select_bentrok = "EXISTS (
+        SELECT 1 FROM peminjaman p
+        WHERE p.id_alat = a.id_alat
+          AND p.status_peminjaman IN ('Dipesan', 'Dipinjam')
+          AND (p.tgl_mulai <= ? AND p.tgl_selesai >= ?)
+    ) AS is_bentrok";
+    $types .= 'ss';
+    $params[] = $tgl_selesai;
+    $params[] = $tgl_mulai;
+}
+
+$sql = "SELECT a.*, k.nama_kategori, u.nama AS nama_pemilik, u.role AS role_pemilik, {$select_bentrok}
         FROM aset_alat a
         JOIN kategori_alat k ON a.id_kategori = k.id_kategori
         JOIN users u ON a.id_pemilik = u.id_user
-        WHERE a.status_alat IN ('Tersedia', 'Dipinjam', 'Perawatan')";
-
-$types = '';
-$params = [];
+        WHERE 1=1";
 
 if ($q !== '') {
     $sql .= " AND (a.nama_alat LIKE ? OR a.deskripsi LIKE ?)";
@@ -42,25 +60,7 @@ if ($id_kategori > 0) {
     $params[] = $id_kategori;
 }
 
-$filter_tanggal_aktif = false;
-if ($tgl_mulai !== '' && $tgl_selesai !== '') {
-    if ($tgl_selesai < $tgl_mulai) {
-        $tgl_selesai = $tgl_mulai;
-    }
-    $filter_tanggal_aktif = true;
-    $sql .= " AND a.status_alat != 'Perawatan'
-              AND NOT EXISTS (
-                  SELECT 1 FROM peminjaman p
-                  WHERE p.id_alat = a.id_alat
-                    AND p.status_peminjaman IN ('Dipesan', 'Dipinjam')
-                    AND (p.tgl_mulai <= ? AND p.tgl_selesai >= ?)
-              )";
-    $types .= 'ss';
-    $params[] = $tgl_selesai;
-    $params[] = $tgl_mulai;
-}
-
-$sql .= " ORDER BY FIELD(a.status_alat, 'Tersedia', 'Dipinjam', 'Perawatan'), a.id_alat ASC";
+$sql .= " ORDER BY (a.status_alat = 'Tersedia') DESC, FIELD(a.status_alat, 'Tersedia', 'Dipinjam', 'Perawatan', 'Menunggu Verifikasi'), a.id_alat ASC";
 
 $stmt = mysqli_prepare($conn, $sql);
 if ($types !== '') {
@@ -90,7 +90,7 @@ function katalog_filter_url(array $overrides = []): string {
 }
 
 $page_title = 'Katalog Perkakas';
-$public_layout = true;
+$public_layout = !isset($_SESSION['user']);
 $public_nav_active = 'katalog';
 require_once ROOT_PATH . '/includes/header.php';
 ?>
@@ -158,12 +158,7 @@ require_once ROOT_PATH . '/includes/header.php';
 </section>
 
 <?php if ($filter_tanggal_aktif): ?>
-    <div class="pk-alert pk-alert--info">
-        <div class="d-flex align-center gap-2">
-            <?= svg_icon('calendar', 18) ?>
-            <span>Menampilkan alat tersedia pada <strong><?= e(format_tanggal($tgl_mulai)) ?></strong> - <strong><?= e(format_tanggal($tgl_selesai)) ?></strong>.</span>
-        </div>
-    </div>
+    <?= render_alert('info', 'Menampilkan alat tersedia pada ' . format_tanggal($tgl_mulai) . ' - ' . format_tanggal($tgl_selesai) . '.', false, 'calendar') ?>
 <?php endif; ?>
 
 <?php if ($jumlah_hasil === 0): ?>
@@ -175,9 +170,10 @@ require_once ROOT_PATH . '/includes/header.php';
         </div>
     </div>
 <?php else: ?>
-    <div class="pk-grid pk-grid--3">
+    <div class="pk-masonry" data-masonry>
         <?php while ($alat = mysqli_fetch_assoc($res_alat)): ?>
             <?php
+            $alat['is_unavailable'] = ($alat['status_alat'] !== 'Tersedia') || ($filter_tanggal_aktif && !empty($alat['is_bentrok']));
             $detail_url = BASE_URL . '/katalog/detail_alat.php?id=' . (int)$alat['id_alat'];
             if ($filter_tanggal_aktif) {
                 $detail_url .= '&tgl_mulai=' . rawurlencode($tgl_mulai) . '&tgl_selesai=' . rawurlencode($tgl_selesai);

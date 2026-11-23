@@ -37,55 +37,51 @@ $page_title_full = isset($page_title) && $page_title !== ''
     <div class="pk-container">
         <?= get_flash() ?>
 <?php else: ?>
-<header class="pk-navbar">
-    <div class="pk-navbar-inner">
-        <a href="<?= BASE_URL . ($current_user ? '/dashboard.php' : '/index.php') ?>" class="pk-brand" aria-label="PinjamKarya, beranda">
-            <span class="pk-brand-icon"><?= brand_logo('light', 18) ?></span>
-            <span>PinjamKarya</span>
-        </a>
-
-        <div class="pk-navbar-actions">
-            <?php if ($current_user): ?>
-                <?php if ($current_user['role'] === 'warga'): ?>
-                    <a href="<?= BASE_URL ?>/auth/profil.php" class="pk-score-pill" title="Skor Kepercayaan">
-                        <?= svg_icon('heart', 14) ?>
-                        <span class="pk-score-label">Skor:</span>
-                        <span><?= (int)$current_user['skor_kredibilitas'] ?></span>
-                    </a>
-                <?php endif; ?>
-
-                <a href="<?= BASE_URL ?>/auth/profil.php" class="pk-user-chip" title="<?= e($current_user['nama']) ?> (Profil)">
-                    <?= svg_icon('user', 14) ?>
-                    <span class="pk-user-name"><?= e($current_user['nama']) ?></span>
-                    <span class="pk-role-tag"><?= e($current_user['role']) ?></span>
-                </a>
-
-                <a href="<?= BASE_URL ?>/auth/logout.php" class="btn btn-outline pk-nav-logout">
-                    <?= svg_icon('log-out', 14) ?>
-                    <span>Keluar</span>
-                </a>
-            <?php else: ?>
-                <a href="<?= BASE_URL ?>/auth/login.php" class="btn btn-outline">
-                    <span>Masuk</span>
-                </a>
-                <a href="<?= BASE_URL ?>/auth/register.php" class="btn btn-primary">
-                    <span>Daftar</span>
-                </a>
-            <?php endif; ?>
-
-            <button type="button" class="pk-menu-toggle" id="pkSidebarToggle" aria-controls="pkSidebar" aria-expanded="false" aria-label="Buka navigasi">
-                <span class="pk-menu-label">Menu</span>
-                <span class="site-nav_toggle-icon" aria-hidden="true"><span></span></span>
-            </button>
-        </div>
-    </div>
-</header>
-
 <div class="pk-backdrop" id="pkBackdrop" aria-hidden="true"></div>
 
 <div class="pk-app-shell">
     <?php require_once ROOT_PATH . '/includes/sidebar.php'; ?>
-    <main id="main-content" class="pk-main">
-        <div class="pk-container">
-            <?= get_flash() ?>
+    <div class="pk-workspace">
+        <header class="pk-navbar">
+            <div class="pk-navbar-inner">
+                <a href="<?= BASE_URL . ($current_user ? '/dashboard.php' : '/index.php') ?>" class="pk-brand" aria-label="PinjamKarya, beranda">
+                    <span class="pk-brand-icon"><?= brand_logo('light', 18) ?></span>
+                    <span>PinjamKarya</span>
+                </a>
+
+                <div class="pk-navbar-actions">
+                    <?php if ($current_user): ?>
+                        <?php if ($current_user['role'] === 'warga'): ?>
+                            <a href="<?= BASE_URL ?>/auth/profil.php" class="pk-score-pill" title="Skor Kepercayaan">
+                                <?= svg_icon('heart', 14) ?>
+                                <span class="pk-score-label">Skor:</span>
+                                <span><?= (int)$current_user['skor_kredibilitas'] ?></span>
+                            </a>
+                        <?php endif; ?>
+
+                        <a href="<?= BASE_URL ?>/auth/profil.php" class="pk-user-chip" title="<?= e(format_nama_pengguna((string)$current_user['nama'])) ?> (Profil)">
+                            <?= svg_icon('user', 14) ?>
+                            <span class="pk-user-name"><?= e(format_nama_pengguna((string)$current_user['nama'])) ?></span>
+                            <?= render_role_badge($current_user) ?>
+                        </a>
+                    <?php else: ?>
+                        <a href="<?= BASE_URL ?>/auth/login.php" class="btn btn-outline">
+                            <span>Masuk</span>
+                        </a>
+                        <a href="<?= BASE_URL ?>/auth/register.php" class="btn btn-primary">
+                            <span>Daftar</span>
+                        </a>
+                    <?php endif; ?>
+
+                    <button type="button" class="pk-menu-toggle" id="pkSidebarToggle" aria-controls="pkSidebar" aria-expanded="false" aria-label="Buka navigasi">
+                        <span class="pk-menu-label">Menu</span>
+                        <span class="site-nav_toggle-icon" aria-hidden="true"><span></span></span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main id="main-content" class="pk-main">
+            <div class="pk-container">
+                <?= get_flash() ?>
 <?php endif; ?>

@@ -134,14 +134,7 @@ require_once ROOT_PATH . '/includes/header.php';
 </div>
 
 <?php if (!$skor_cukup): ?>
-    <div class="pk-alert pk-alert--danger" role="alert">
-        <div>
-            <strong>Skor Kepercayaan Belum Memenuhi Syarat</strong>
-            <div>
-                Skor Anda: <strong><?= $skor_warga ?> poin</strong>. Syarat minimal <strong><?= e($alat['nama_alat']) ?></strong>: <strong><?= $min_skor ?> poin</strong> (kurang <?= $selisih_skor ?> poin).
-            </div>
-        </div>
-    </div>
+    <?= render_alert('danger', 'Skor Kepercayaan Anda ' . $skor_warga . ' poin (syarat minimal ' . $alat['nama_alat'] . ': ' . $min_skor . ' poin, kurang ' . $selisih_skor . ' poin).', false) ?>
 <?php endif; ?>
 
 <div class="pk-grid pk-grid--2">

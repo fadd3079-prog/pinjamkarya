@@ -3,7 +3,8 @@ if (!defined('ROOT_PATH')) {
     define('ROOT_PATH', dirname(__DIR__));
 }
 
-function pk_is_https(): bool {
+function pk_is_https(): bool
+{
     if (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off') {
         return true;
     }
@@ -13,7 +14,8 @@ function pk_is_https(): bool {
     return strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
 }
 
-function pk_detect_base_url(): string {
+function pk_detect_base_url(): string
+{
     $proto = pk_is_https() ? 'https' : 'http';
     $host = (string)($_SERVER['HTTP_X_FORWARDED_HOST'] ?? ($_SERVER['HTTP_HOST'] ?? 'localhost'));
     $host = trim(explode(',', $host)[0]);
@@ -38,7 +40,8 @@ function pk_detect_base_url(): string {
     return $proto . '://' . $host . $subpath;
 }
 
-function pk_config(?string $section = null) {
+function pk_config(?string $section = null)
+{
     static $config = null;
 
     if ($config === null) {

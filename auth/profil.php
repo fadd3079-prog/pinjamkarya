@@ -231,34 +231,22 @@ require_once ROOT_PATH . '/includes/header.php';
                             <td class="pk-td-head">
                                 <div class="pk-td-head-row">
                                     <div class="pk-td-head-main">
-                                        <strong class="pk-nowrap"><?= e($item['kode_booking']) ?></strong>
+                                        <span class="pk-code-tag"><?= e($item['kode_booking']) ?></span>
                                         <div class="pk-mobile-inline"><br><?= e($item['nama_alat']) ?></div>
                                     </div>
                                     <span class="pk-mobile-badge">
-                                        <?php if ($item['kondisi_fisik'] === 'Baik'): ?>
-                                            <span class="pk-badge pk-badge--success">Baik</span>
-                                        <?php elseif ($item['kondisi_fisik'] === 'Rusak Ringan'): ?>
-                                            <span class="pk-badge pk-badge--warning">Rusak Ringan</span>
-                                        <?php else: ?>
-                                            <span class="pk-badge pk-badge--danger">Rusak Berat</span>
-                                        <?php endif; ?>
+                                        <?= badge_kondisi_fisik($item['kondisi_fisik']) ?>
                                     </span>
                                 </div>
                             </td>
                             <td class="pk-desktop-cell" data-label="Perkakas"><?= e($item['nama_alat']) ?></td>
                             <td data-label="Tahap">
-                                <span class="pk-badge <?= $item['jenis_inspeksi'] === 'Akhir' ? 'pk-badge--primary' : 'pk-badge--muted' ?>">
+                                <span class="pk-tag<?= $item['jenis_inspeksi'] === 'Akhir' ? ' pk-tag--accent' : '' ?>">
                                     <?= e($item['jenis_inspeksi']) ?>
                                 </span>
                             </td>
                             <td class="pk-desktop-cell" data-label="Kondisi">
-                                <?php if ($item['kondisi_fisik'] === 'Baik'): ?>
-                                    <span class="pk-badge pk-badge--success">Baik</span>
-                                <?php elseif ($item['kondisi_fisik'] === 'Rusak Ringan'): ?>
-                                    <span class="pk-badge pk-badge--warning">Rusak Ringan</span>
-                                <?php else: ?>
-                                    <span class="pk-badge pk-badge--danger">Rusak Berat</span>
-                                <?php endif; ?>
+                                <?= badge_kondisi_fisik($item['kondisi_fisik']) ?>
                             </td>
                             <td data-label="Catatan"><?= e($item['catatan_inspeksi']) ?></td>
                         </tr>

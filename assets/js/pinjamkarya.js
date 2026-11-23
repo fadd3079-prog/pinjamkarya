@@ -44,17 +44,36 @@ document.addEventListener('DOMContentLoaded', function () {
   const sidebarToggle = document.getElementById('pkSidebarToggle');
   const sidebarClose = document.getElementById('pkSidebarClose');
 
+  const confirmModal = document.getElementById('pkConfirmModal');
+  const confirmTitle = document.getElementById('pkConfirmTitle');
+  const confirmMsg = document.getElementById('pkConfirmMsg');
+  const confirmIcon = document.getElementById('pkConfirmIcon');
+  const confirmSubmitBtn = document.getElementById('pkConfirmSubmit');
+  let pendingConfirmForm = null;
   let lastFocusedTrigger = null;
+
+  function syncModalBodyLock() {
+    document.body.classList.toggle('pk-modal-open', Boolean(document.querySelector('.pk-modal.open')));
+  }
 
   function closeAllDrawers() {
     if (sidebar && sidebar.classList.contains('open')) {
       sidebar.classList.remove('open');
       if (sidebarToggle) sidebarToggle.setAttribute('aria-expanded', 'false');
     }
-    document.querySelectorAll('.pk-modal.open').forEach(function (modal) {
+    const openModals = document.querySelectorAll('.pk-modal.open');
+    for (let i = 0; i < openModals.length; i += 1) {
+      const modal = openModals[i];
+      const cancelUrl = modal.getAttribute('data-cancel-url');
+      if (cancelUrl) {
+        window.location.href = cancelUrl;
+        return;
+      }
       modal.classList.remove('open');
       modal.setAttribute('aria-hidden', 'true');
-    });
+    }
+    pendingConfirmForm = null;
+    syncModalBodyLock();
     if (backdrop) backdrop.classList.remove('show');
     if (lastFocusedTrigger) {
       lastFocusedTrigger.focus();
@@ -88,11 +107,19 @@ document.addEventListener('DOMContentLoaded', function () {
         lastFocusedTrigger = trigger;
         modal.classList.add('open');
         modal.setAttribute('aria-hidden', 'false');
+        syncModalBodyLock();
+        const firstField = modal.querySelector('input:not([type="hidden"]), select, textarea');
         const closeBtn = modal.querySelector('[data-modal-close]');
-        if (closeBtn) closeBtn.focus();
+        if (firstField) {
+          firstField.focus();
+        } else if (closeBtn) {
+          closeBtn.focus();
+        }
       }
     });
   });
+
+  syncModalBodyLock();
 
   document.querySelectorAll('[data-modal-close]').forEach(function (btn) {
     btn.addEventListener('click', closeAllDrawers);
@@ -111,6 +138,54 @@ document.addEventListener('DOMContentLoaded', function () {
       closeAllDrawers();
     }
   });
+
+  if (confirmModal && confirmSubmitBtn) {
+    const toneBtnMap = {
+      danger: 'btn btn-danger',
+      warm: 'btn btn-warm',
+      ok: 'btn btn-secondary',
+      primary: 'btn btn-primary',
+    };
+    const toneIconMap = {
+      danger: 'pk-confirm-icon pk-confirm-icon--danger',
+      warm: 'pk-confirm-icon pk-confirm-icon--warm',
+      ok: 'pk-confirm-icon pk-confirm-icon--ok',
+      primary: 'pk-confirm-icon pk-confirm-icon--info',
+    };
+
+    document.addEventListener('submit', function (e) {
+      const form = e.target;
+      if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-confirm')) return;
+      if (form.dataset.confirmed === '1') return;
+
+      e.preventDefault();
+      pendingConfirmForm = form;
+      lastFocusedTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+      const tone = form.getAttribute('data-confirm-tone') || 'primary';
+      if (confirmTitle) confirmTitle.textContent = form.getAttribute('data-confirm-title') || 'Konfirmasi';
+      if (confirmMsg) confirmMsg.textContent = form.getAttribute('data-confirm') || '';
+      if (confirmIcon) confirmIcon.className = toneIconMap[tone] || 'pk-confirm-icon';
+      confirmSubmitBtn.className = toneBtnMap[tone] || 'btn btn-primary';
+      confirmSubmitBtn.textContent = form.getAttribute('data-confirm-btn') || 'Lanjutkan';
+
+      confirmModal.classList.add('open');
+      confirmModal.setAttribute('aria-hidden', 'false');
+      syncModalBodyLock();
+      confirmSubmitBtn.focus();
+    });
+
+    confirmSubmitBtn.addEventListener('click', function () {
+      if (!pendingConfirmForm) return;
+      const targetForm = pendingConfirmForm;
+      pendingConfirmForm = null;
+      targetForm.dataset.confirmed = '1';
+      confirmModal.classList.remove('open');
+      confirmModal.setAttribute('aria-hidden', 'true');
+      syncModalBodyLock();
+      HTMLFormElement.prototype.submit.call(targetForm);
+    });
+  }
 
   document.querySelectorAll('.pk-alert-close').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -204,4 +279,108 @@ document.addEventListener('DOMContentLoaded', function () {
     tglSelesaiInput.addEventListener('change', updateDateConstraints);
     updateDateConstraints();
   }
+
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  document.querySelectorAll('[data-masonry]').forEach(function (grid) {
+    const cards = Array.from(grid.querySelectorAll('.pk-tool-card'));
+    if (!cards.length) return;
+
+    let debounceId = 0;
+    let lastWidth = -1;
+    let lastCols = -1;
+
+    function columnCount() {
+      const w = window.innerWidth;
+      if (w >= 1100) return 4;
+      if (w >= 768) return 3;
+      return 2;
+    }
+
+    function layoutMasonry() {
+      const cols = columnCount();
+      const gap = parseFloat(getComputedStyle(grid).getPropertyValue('--pk-masonry-gap')) || 12;
+      const width = grid.clientWidth;
+      if (width <= 0) return;
+
+      const colWidth = Math.floor((width - (cols - 1) * gap) / cols);
+      const colHeights = new Array(cols).fill(0);
+
+      for (let i = 0; i < cards.length; i += 1) {
+        const card = cards[i];
+        const ratio = parseFloat(card.dataset.ratio) || 0.75;
+        const height = Math.max(cols <= 2 ? 158 : 0, Math.round(colWidth * ratio));
+        let col = 0;
+        for (let c = 1; c < cols; c += 1) {
+          if (colHeights[c] < colHeights[col]) col = c;
+        }
+        const x = col * (colWidth + gap);
+        const y = colHeights[col];
+        card.style.width = colWidth + 'px';
+        card.style.height = height + 'px';
+        card.style.transform = 'translate3d(' + x + 'px, ' + y + 'px, 0)';
+        colHeights[col] += height + gap;
+      }
+
+      const tallest = Math.max.apply(null, colHeights.concat([0]));
+      grid.style.height = Math.max(0, tallest - gap) + 'px';
+      lastWidth = width;
+      lastCols = cols;
+    }
+
+    function scheduleLayout() {
+      if (debounceId) clearTimeout(debounceId);
+      debounceId = setTimeout(function () {
+        debounceId = 0;
+        layoutMasonry();
+      }, 120);
+    }
+
+    grid.classList.add('is-masonry');
+    layoutMasonry();
+    if (!reducedMotion.matches) {
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          grid.classList.add('is-animated');
+        });
+      });
+    }
+
+    cards.forEach(function (card) {
+      const img = card.querySelector('img');
+      if (!img) return;
+      function syncImgRatio() {
+        if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+          const actualRatio = img.naturalHeight / img.naturalWidth;
+          const prevRatio = parseFloat(card.dataset.ratio) || 0;
+          if (Math.abs(actualRatio - prevRatio) >= 0.005) {
+            card.dataset.ratio = String(actualRatio);
+            card.style.setProperty('--ratio', String(actualRatio));
+            scheduleLayout();
+          }
+        }
+      }
+      if (img.complete) {
+        syncImgRatio();
+      } else {
+        img.addEventListener('load', syncImgRatio, { once: true });
+      }
+    });
+
+    if ('ResizeObserver' in window) {
+      const ro = new ResizeObserver(function () {
+        const w = grid.clientWidth;
+        const c = columnCount();
+        if (Math.abs(w - lastWidth) >= 2 || c !== lastCols) {
+          scheduleLayout();
+        }
+      });
+      ro.observe(grid);
+    }
+
+    window.addEventListener('resize', function () {
+      if (Math.abs(grid.clientWidth - lastWidth) >= 2 || columnCount() !== lastCols) {
+        scheduleLayout();
+      }
+    });
+  });
 });

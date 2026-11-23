@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         mysqli_stmt_bind_param($stmt, 'si', $target_status, $id_alat);
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
-        set_flash('info', 'Status alat diubah menjadi ' . $target_status . '.');
+        set_flash($target_status === 'Tersedia' ? 'success' : 'warning', 'Status alat diubah menjadi ' . $target_status . '.');
         header('Location: ' . BASE_URL . '/admin/kelola_aset.php');
         exit;
     }
@@ -66,8 +66,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($nama_alat === '' || $deskripsi === '' || $id_kategori <= 0) {
-            set_flash('warning', 'Nama alat, kategori, dan deskripsi wajib diisi.');
-            header('Location: ' . BASE_URL . '/admin/kelola_aset.php');
+            set_modal_feedback('warning', 'Nama alat, kategori, dan deskripsi wajib diisi.', $_POST);
+            $err_q = ($action === 'update' && $id_alat > 0) ? '?edit=' . $id_alat : '?open=form';
+            header('Location: ' . BASE_URL . '/admin/kelola_aset.php' . $err_q);
             exit;
         }
 
@@ -75,8 +76,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_FILES['foto_alat']) && $_FILES['foto_alat']['error'] !== UPLOAD_ERR_NO_FILE) {
             $up = upload_gambar($_FILES['foto_alat'], UPLOAD_ALAT_PATH, 'alat_');
             if (!$up['success']) {
-                set_flash('danger', $up['message']);
-                header('Location: ' . BASE_URL . '/admin/kelola_aset.php');
+                set_modal_feedback('danger', $up['message'], $_POST);
+                $err_q = ($action === 'update' && $id_alat > 0) ? '?edit=' . $id_alat : '?open=form';
+                header('Location: ' . BASE_URL . '/admin/kelola_aset.php' . $err_q);
                 exit;
             }
             $foto_filename = $up['filename'];
@@ -110,6 +112,10 @@ if (isset($_GET['edit'])) {
     mysqli_stmt_close($stmt_e);
 }
 
+$modal_fb = get_modal_feedback();
+$form_val = !empty($modal_fb['old']) ? $modal_fb['old'] : ($edit_alat ?? []);
+$modal_open = ($edit_alat !== null) || isset($_GET['open']) || ($modal_fb !== null);
+
 $res_kategori = mysqli_query($conn, 'SELECT id_kategori, nama_kategori FROM kategori_alat ORDER BY nama_kategori ASC');
 $kategori_options = [];
 while ($k = mysqli_fetch_assoc($res_kategori)) {
@@ -136,6 +142,10 @@ require_once ROOT_PATH . '/includes/header.php';
 
 <div class="pk-page-header">
     <h1>Inventaris &amp; Verifikasi Alat</h1>
+    <button type="button" class="btn btn-primary" data-modal-target="#modalAset">
+        <?= svg_icon('plus', 16) ?>
+        <span>Tambah Alat</span>
+    </button>
 </div>
 
 <?php if (mysqli_num_rows($res_pending) > 0): ?>
@@ -161,16 +171,16 @@ require_once ROOT_PATH . '/includes/header.php';
             <tbody>
                 <?php while ($p = mysqli_fetch_assoc($res_pending)): ?>
                     <tr class="pk-tr-media">
-                        <td class="pk-td-media" style="width:88px;">
-                            <img src="<?= e(get_gambar_alat($p['foto_alat'], $p['nama_alat'])) ?>" alt="<?= e($p['nama_alat']) ?>" width="76" height="50" class="pk-thumb-table">
+                        <td class="pk-td-media">
+                            <img src="<?= e(get_gambar_alat($p['foto_alat'], $p['nama_alat'])) ?>" alt="<?= e($p['nama_alat']) ?>" class="pk-thumb-table">
                         </td>
                         <td class="pk-td-head">
                             <strong><?= e($p['nama_alat']) ?></strong>
-                            <div><span class="pk-badge pk-badge--primary mt-1"><?= e($p['nama_kategori']) ?></span></div>
+                            <div><span class="pk-tag mt-1"><?= e($p['nama_kategori']) ?></span></div>
                         </td>
                         <td data-label="Mitra">
-                            <strong><?= e($p['nama_pemilik']) ?></strong><br>
-                            <span class="text-muted" style="font-size:0.82rem;"><?= e($p['no_hp']) ?></span>
+                            <strong><?= e(format_nama_pengguna((string)$p['nama_pemilik'])) ?></strong><br>
+                            <span class="pk-td-sub"><?= e($p['no_hp']) ?></span>
                         </td>
                         <td data-label="Ketentuan">
                             <div>Beli <?= rupiah($p['harga_beli_baru']) ?> &bull; Rawat <?= (float)$p['biaya_perawatan'] <= 0 ? 'Gratis' : rupiah($p['biaya_perawatan']) ?></div>
@@ -178,14 +188,14 @@ require_once ROOT_PATH . '/includes/header.php';
                         </td>
                         <td class="pk-td-actions">
                             <div class="btn-group-wrap">
-                                <form method="post" action="<?= BASE_URL ?>/admin/kelola_aset.php">
+                                <form method="post" action="<?= BASE_URL ?>/admin/kelola_aset.php" data-confirm="Setujui <?= e($p['nama_alat']) ?> tampil di katalog?" data-confirm-title="Setujui Alat" data-confirm-btn="Setujui" data-confirm-tone="ok">
                                     <input type="hidden" name="action" value="approve_mitra_tool">
                                     <input type="hidden" name="id_alat" value="<?= (int)$p['id_alat'] ?>">
                                     <button type="submit" class="btn btn-secondary btn-icon" title="Setujui" aria-label="Setujui <?= e($p['nama_alat']) ?>">
                                         <?= svg_icon('check-circle', 16) ?>
                                     </button>
                                 </form>
-                                <form method="post" action="<?= BASE_URL ?>/admin/kelola_aset.php" onsubmit="return confirm('Tolak dan hapus pengajuan alat ini?');">
+                                <form method="post" action="<?= BASE_URL ?>/admin/kelola_aset.php" data-confirm="Tolak dan hapus pengajuan <?= e($p['nama_alat']) ?>?" data-confirm-title="Tolak Pengajuan" data-confirm-btn="Tolak &amp; Hapus" data-confirm-tone="danger">
                                     <input type="hidden" name="action" value="delete">
                                     <input type="hidden" name="id_alat" value="<?= (int)$p['id_alat'] ?>">
                                     <button type="submit" class="btn btn-danger btn-icon" title="Tolak" aria-label="Tolak <?= e($p['nama_alat']) ?>">
@@ -202,96 +212,107 @@ require_once ROOT_PATH . '/includes/header.php';
 </section>
 <?php endif; ?>
 
-<section class="pk-card mb-4" aria-labelledby="form-aset-heading">
-    <div class="pk-card-header">
-        <h2 id="form-aset-heading" class="pk-card-title">
-            <?= svg_icon($edit_alat ? 'clipboard' : 'plus', 18) ?>
-            <span><?= $edit_alat ? 'Edit Alat #' . (int)$edit_alat['id_alat'] : 'Tambah Alat' ?></span>
-        </h2>
-        <?php if ($edit_alat): ?>
-            <a href="<?= BASE_URL ?>/admin/kelola_aset.php" class="btn btn-muted">Batal</a>
+<div id="modalAset"
+     class="pk-modal<?= $modal_open ? ' open' : '' ?>"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="form-aset-heading"
+     aria-hidden="<?= $modal_open ? 'false' : 'true' ?>"<?= $edit_alat ? ' data-cancel-url="' . BASE_URL . '/admin/kelola_aset.php"' : '' ?>>
+    <div class="pk-modal-dialog pk-modal-dialog--wide">
+        <div class="pk-card-header">
+            <h2 id="form-aset-heading" class="pk-card-title">
+                <?= svg_icon($edit_alat ? 'clipboard' : 'plus', 18) ?>
+                <span><?= $edit_alat ? 'Edit Alat #' . (int)$edit_alat['id_alat'] : 'Tambah Alat' ?></span>
+            </h2>
+            <button type="button" class="btn btn-muted btn-icon" data-modal-close aria-label="Tutup form">
+                <?= svg_icon('x', 16) ?>
+            </button>
+        </div>
+
+        <?php if ($modal_fb): ?>
+            <?= render_alert((string)$modal_fb['type'], (string)$modal_fb['message']) ?>
         <?php endif; ?>
+
+        <form method="post" action="<?= BASE_URL ?>/admin/kelola_aset.php" enctype="multipart/form-data">
+            <input type="hidden" name="action" value="<?= $edit_alat ? 'update' : 'create' ?>">
+            <?php if ($edit_alat): ?>
+                <input type="hidden" name="id_alat" value="<?= (int)$edit_alat['id_alat'] ?>">
+                <input type="hidden" name="foto_lama" value="<?= e($edit_alat['foto_alat']) ?>">
+            <?php endif; ?>
+
+            <div class="pk-grid pk-grid--3">
+                <div class="form-group">
+                    <label for="nama_alat" class="form-label">Nama Alat</label>
+                    <input type="text" id="nama_alat" name="nama_alat" class="form-control" value="<?= e($form_val['nama_alat'] ?? '') ?>" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="id_kategori" class="form-label">Kategori</label>
+                    <select id="id_kategori" name="id_kategori" class="form-select" required>
+                        <option value="">Pilih Kategori</option>
+                        <?php foreach ($kategori_options as $kat): ?>
+                            <option value="<?= (int)$kat['id_kategori'] ?>" <?= ((int)($form_val['id_kategori'] ?? 0) === (int)$kat['id_kategori']) ? 'selected' : '' ?>>
+                                <?= e($kat['nama_kategori']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="status_alat" class="form-label">Status</label>
+                    <select id="status_alat" name="status_alat" class="form-select">
+                        <?php
+                        $statuses = ['Tersedia', 'Perawatan', 'Menunggu Verifikasi', 'Dipinjam'];
+                        $curr_st = $form_val['status_alat'] ?? 'Tersedia';
+                        foreach ($statuses as $st):
+                        ?>
+                            <option value="<?= e($st) ?>" <?= $curr_st === $st ? 'selected' : '' ?>><?= e($st) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            </div>
+
+            <div class="pk-grid pk-grid--4">
+                <div class="form-group">
+                    <label for="harga_beli_baru" class="form-label">Harga Baru (Rp)</label>
+                    <input type="number" step="1000" min="0" id="harga_beli_baru" name="harga_beli_baru" class="form-control" value="<?= e(isset($form_val['harga_beli_baru']) ? (int)$form_val['harga_beli_baru'] : '600000') ?>" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="biaya_perawatan" class="form-label">Biaya Rawat (Rp)</label>
+                    <input type="number" step="500" min="0" id="biaya_perawatan" name="biaya_perawatan" class="form-control" value="<?= e(isset($form_val['biaya_perawatan']) ? (int)$form_val['biaya_perawatan'] : '0') ?>" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="max_hari_pinjam" class="form-label">Maks. Pinjam (Hari)</label>
+                    <input type="number" min="1" max="30" id="max_hari_pinjam" name="max_hari_pinjam" class="form-control" value="<?= e($form_val['max_hari_pinjam'] ?? '3') ?>" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="min_skor" class="form-label">Skor Minimal</label>
+                    <input type="number" min="0" max="200" id="min_skor" name="min_skor" class="form-control" value="<?= e($form_val['min_skor'] ?? '50') ?>" required>
+                </div>
+            </div>
+
+            <div class="pk-grid pk-grid--2">
+                <div class="form-group">
+                    <label for="deskripsi" class="form-label">Spesifikasi &amp; Kelengkapan</label>
+                    <textarea id="deskripsi" name="deskripsi" class="form-control" required><?= e($form_val['deskripsi'] ?? '') ?></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="foto_alat" class="form-label">Foto Alat (Opsional, maks. 2 MB)</label>
+                    <input type="file" id="foto_alat" name="foto_alat" class="form-control" accept=".jpg,.jpeg,.png,.webp">
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">
+                <?= svg_icon('check-circle', 16) ?>
+                <span><?= $edit_alat ? 'Simpan Perubahan' : 'Simpan Alat' ?></span>
+            </button>
+        </form>
     </div>
-
-    <form method="post" action="<?= BASE_URL ?>/admin/kelola_aset.php" enctype="multipart/form-data">
-        <input type="hidden" name="action" value="<?= $edit_alat ? 'update' : 'create' ?>">
-        <?php if ($edit_alat): ?>
-            <input type="hidden" name="id_alat" value="<?= (int)$edit_alat['id_alat'] ?>">
-            <input type="hidden" name="foto_lama" value="<?= e($edit_alat['foto_alat']) ?>">
-        <?php endif; ?>
-
-        <div class="pk-grid pk-grid--3">
-            <div class="form-group">
-                <label for="nama_alat" class="form-label">Nama Alat</label>
-                <input type="text" id="nama_alat" name="nama_alat" class="form-control" value="<?= e($edit_alat['nama_alat'] ?? '') ?>" required>
-            </div>
-
-            <div class="form-group">
-                <label for="id_kategori" class="form-label">Kategori</label>
-                <select id="id_kategori" name="id_kategori" class="form-select" required>
-                    <option value="">Pilih Kategori</option>
-                    <?php foreach ($kategori_options as $kat): ?>
-                        <option value="<?= (int)$kat['id_kategori'] ?>" <?= ((int)($edit_alat['id_kategori'] ?? 0) === (int)$kat['id_kategori']) ? 'selected' : '' ?>>
-                            <?= e($kat['nama_kategori']) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="status_alat" class="form-label">Status</label>
-                <select id="status_alat" name="status_alat" class="form-select">
-                    <?php
-                    $statuses = ['Tersedia', 'Perawatan', 'Menunggu Verifikasi', 'Dipinjam'];
-                    $curr_st = $edit_alat['status_alat'] ?? 'Tersedia';
-                    foreach ($statuses as $st):
-                    ?>
-                        <option value="<?= e($st) ?>" <?= $curr_st === $st ? 'selected' : '' ?>><?= e($st) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-        </div>
-
-        <div class="pk-grid pk-grid--4">
-            <div class="form-group">
-                <label for="harga_beli_baru" class="form-label">Harga Baru (Rp)</label>
-                <input type="number" step="1000" min="0" id="harga_beli_baru" name="harga_beli_baru" class="form-control" value="<?= e(isset($edit_alat['harga_beli_baru']) ? (int)$edit_alat['harga_beli_baru'] : '600000') ?>" required>
-            </div>
-
-            <div class="form-group">
-                <label for="biaya_perawatan" class="form-label">Biaya Rawat (Rp)</label>
-                <input type="number" step="500" min="0" id="biaya_perawatan" name="biaya_perawatan" class="form-control" value="<?= e(isset($edit_alat['biaya_perawatan']) ? (int)$edit_alat['biaya_perawatan'] : '0') ?>" required>
-            </div>
-
-            <div class="form-group">
-                <label for="max_hari_pinjam" class="form-label">Maks. Pinjam (Hari)</label>
-                <input type="number" min="1" max="30" id="max_hari_pinjam" name="max_hari_pinjam" class="form-control" value="<?= e($edit_alat['max_hari_pinjam'] ?? '3') ?>" required>
-            </div>
-
-            <div class="form-group">
-                <label for="min_skor" class="form-label">Skor Minimal</label>
-                <input type="number" min="0" max="200" id="min_skor" name="min_skor" class="form-control" value="<?= e($edit_alat['min_skor'] ?? '50') ?>" required>
-            </div>
-        </div>
-
-        <div class="pk-grid pk-grid--2">
-            <div class="form-group">
-                <label for="deskripsi" class="form-label">Spesifikasi &amp; Kelengkapan</label>
-                <textarea id="deskripsi" name="deskripsi" class="form-control" required><?= e($edit_alat['deskripsi'] ?? '') ?></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="foto_alat" class="form-label">Foto Alat (Opsional, maks. 2 MB)</label>
-                <input type="file" id="foto_alat" name="foto_alat" class="form-control" accept=".jpg,.jpeg,.png,.webp">
-            </div>
-        </div>
-
-        <button type="submit" class="btn btn-primary">
-            <?= svg_icon('check-circle', 16) ?>
-            <span><?= $edit_alat ? 'Simpan Perubahan' : 'Simpan Alat' ?></span>
-        </button>
-    </form>
-</section>
+</div>
 
 <section class="pk-table-card" aria-labelledby="all-aset-heading">
     <div class="pk-table-card-head">
@@ -314,23 +335,28 @@ require_once ROOT_PATH . '/includes/header.php';
                 </tr>
             </thead>
             <tbody>
-                <?php while ($row = mysqli_fetch_assoc($res_all)): ?>
-                    <tr class="pk-tr-media">
-                        <td class="pk-td-media" style="width:88px;">
-                            <img src="<?= e(get_gambar_alat($row['foto_alat'], $row['nama_alat'])) ?>" alt="<?= e($row['nama_alat']) ?>" width="76" height="50" class="pk-thumb-table">
-                        </td>
-                        <td class="pk-td-head">
-                            <div class="pk-td-head-row">
-                                <div class="pk-td-head-main">
-                                    <strong><?= e($row['nama_alat']) ?></strong>
-                                    <div><span class="pk-badge pk-badge--primary mt-1"><?= e($row['nama_kategori']) ?></span></div>
+                <?php if (mysqli_num_rows($res_all) === 0): ?>
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">Belum ada unit alat terdaftar.</td>
+                    </tr>
+                <?php else: ?>
+                    <?php while ($row = mysqli_fetch_assoc($res_all)): ?>
+                        <tr class="pk-tr-media">
+                            <td class="pk-td-media">
+                                <img src="<?= e(get_gambar_alat($row['foto_alat'], $row['nama_alat'])) ?>" alt="<?= e($row['nama_alat']) ?>" class="pk-thumb-table">
+                            </td>
+                            <td class="pk-td-head">
+                                <div class="pk-td-head-row">
+                                    <div class="pk-td-head-main">
+                                        <strong><?= e($row['nama_alat']) ?></strong>
+                                        <div><span class="pk-tag mt-1"><?= e($row['nama_kategori']) ?></span></div>
+                                    </div>
+                                    <span class="pk-mobile-badge"><?= badge_status_alat($row['status_alat']) ?></span>
                                 </div>
-                                <span class="pk-mobile-badge"><?= badge_status_alat($row['status_alat']) ?></span>
-                            </div>
-                        </td>
+                            </td>
                         <td data-label="Pemilik">
-                            <strong><?= e($row['nama_pemilik']) ?></strong>
-                            <span class="text-muted" style="font-size:0.82rem;"> &bull; <?= $row['role_pemilik'] === 'admin' ? 'Hub' : 'Mitra' ?></span>
+                            <strong><?= e(format_nama_pengguna((string)$row['nama_pemilik'])) ?></strong>
+                            <span class="pk-td-sub"> &bull; <?= $row['role_pemilik'] === 'admin' ? 'Hub' : 'Mitra' ?></span>
                         </td>
                         <td data-label="Ketentuan">
                             <div>Beli <?= rupiah($row['harga_beli_baru']) ?> &bull; Rawat <?= (float)$row['biaya_perawatan'] <= 0 ? 'Gratis' : rupiah($row['biaya_perawatan']) ?></div>
@@ -344,7 +370,7 @@ require_once ROOT_PATH . '/includes/header.php';
                                 </a>
 
                                 <?php if ($row['status_alat'] === 'Tersedia'): ?>
-                                    <form method="post" action="<?= BASE_URL ?>/admin/kelola_aset.php">
+                                    <form method="post" action="<?= BASE_URL ?>/admin/kelola_aset.php" data-confirm="Ubah status <?= e($row['nama_alat']) ?> ke Perawatan?" data-confirm-title="Ubah ke Perawatan" data-confirm-btn="Perawatan" data-confirm-tone="warm">
                                         <input type="hidden" name="action" value="toggle_maintenance">
                                         <input type="hidden" name="id_alat" value="<?= (int)$row['id_alat'] ?>">
                                         <input type="hidden" name="target_status" value="Perawatan">
@@ -353,7 +379,7 @@ require_once ROOT_PATH . '/includes/header.php';
                                         </button>
                                     </form>
                                 <?php elseif ($row['status_alat'] === 'Perawatan'): ?>
-                                    <form method="post" action="<?= BASE_URL ?>/admin/kelola_aset.php">
+                                    <form method="post" action="<?= BASE_URL ?>/admin/kelola_aset.php" data-confirm="Aktifkan kembali <?= e($row['nama_alat']) ?> menjadi Tersedia?" data-confirm-title="Aktifkan Alat" data-confirm-btn="Aktifkan" data-confirm-tone="ok">
                                         <input type="hidden" name="action" value="toggle_maintenance">
                                         <input type="hidden" name="id_alat" value="<?= (int)$row['id_alat'] ?>">
                                         <input type="hidden" name="target_status" value="Tersedia">
@@ -363,7 +389,7 @@ require_once ROOT_PATH . '/includes/header.php';
                                     </form>
                                 <?php endif; ?>
 
-                                <form method="post" action="<?= BASE_URL ?>/admin/kelola_aset.php" onsubmit="return confirm('Hapus unit alat ini?');">
+                                <form method="post" action="<?= BASE_URL ?>/admin/kelola_aset.php" data-confirm="Hapus unit <?= e($row['nama_alat']) ?> secara permanen?" data-confirm-title="Hapus Alat" data-confirm-btn="Hapus" data-confirm-tone="danger">
                                     <input type="hidden" name="action" value="delete">
                                     <input type="hidden" name="id_alat" value="<?= (int)$row['id_alat'] ?>">
                                     <button type="submit" class="btn btn-danger btn-icon" title="Hapus" aria-label="Hapus <?= e($row['nama_alat']) ?>" <?= (int)$row['jml_pinjam'] > 0 ? 'disabled' : '' ?>>
@@ -374,6 +400,7 @@ require_once ROOT_PATH . '/includes/header.php';
                         </td>
                     </tr>
                 <?php endwhile; ?>
+                <?php endif; ?>
             </tbody>
         </table>
     </div>

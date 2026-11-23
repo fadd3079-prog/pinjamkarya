@@ -112,19 +112,19 @@ require_once ROOT_PATH . '/includes/header.php';
     ?>
     <div class="pk-tabs" role="tablist" aria-label="Meja Kerja Teknisi">
         <button type="button"
-                class="pk-tab-btn <?= $active_tab === 'open' ? 'active' : '' ?>"
-                role="tab"
-                aria-selected="<?= $active_tab === 'open' ? 'true' : 'false' ?>"
-                data-tab-target="#tabOpenTickets">
+            class="pk-tab-btn <?= $active_tab === 'open' ? 'active' : '' ?>"
+            role="tab"
+            aria-selected="<?= $active_tab === 'open' ? 'true' : 'false' ?>"
+            data-tab-target="#tabOpenTickets">
             <?= svg_icon('clipboard', 16) ?>
             <span>Antrean Terbuka (<?= $cnt_open ?>)</span>
         </button>
 
         <button type="button"
-                class="pk-tab-btn <?= $active_tab === 'myjobs' ? 'active' : '' ?>"
-                role="tab"
-                aria-selected="<?= $active_tab === 'myjobs' ? 'true' : 'false' ?>"
-                data-tab-target="#tabMyJobs">
+            class="pk-tab-btn <?= $active_tab === 'myjobs' ? 'active' : '' ?>"
+            role="tab"
+            aria-selected="<?= $active_tab === 'myjobs' ? 'true' : 'false' ?>"
+            data-tab-target="#tabMyJobs">
             <?= svg_icon('wrench', 16) ?>
             <span>Pekerjaan Saya (<?= $cnt_jobs ?>)</span>
         </button>
@@ -141,11 +141,11 @@ require_once ROOT_PATH . '/includes/header.php';
                 <article class="pk-card mb-4">
                     <div class="pk-card-header">
                         <div class="d-flex align-center gap-2 flex-wrap">
-                            <span class="pk-badge pk-badge--primary"><?= e($t['kode_tiket']) ?></span>
-                            <span class="pk-badge pk-badge--muted"><?= e($t['nama_kategori']) ?></span>
-                            <span class="pk-badge pk-badge--warning"><?= e($t['metode_cek']) ?></span>
+                            <span class="pk-code-tag"><?= e($t['kode_tiket']) ?></span>
+                            <span class="pk-tag"><?= e($t['nama_kategori']) ?></span>
+                            <span class="pk-tag"><?= e($t['metode_cek']) ?></span>
                             <?php if (!empty($t['id_alat_hub'])): ?>
-                                <span class="pk-badge pk-badge--danger">Inventaris Hub</span>
+                                <span class="pk-tag pk-tag--accent">Inventaris Hub</span>
                             <?php endif; ?>
                         </div>
                         <?= badge_status_tiket($t['status_tiket']) ?>
@@ -155,10 +155,10 @@ require_once ROOT_PATH . '/includes/header.php';
                         <div>
                             <div class="d-flex gap-3 align-start mb-3">
                                 <img src="<?= e(get_gambar_tiket($t['foto_barang'], $t['nama_barang'])) ?>"
-                                     alt="<?= e($t['nama_barang']) ?>"
-                                     width="112"
-                                     height="80"
-                                     class="pk-thumb-ticket">
+                                    alt="<?= e($t['nama_barang']) ?>"
+                                    width="112"
+                                    height="80"
+                                    class="pk-thumb-ticket">
                                 <div>
                                     <h2 class="mb-1"><?= e($t['nama_barang']) ?></h2>
                                     <div class="text-muted"><?= e($t['deskripsi_kerusakan']) ?></div>
@@ -239,10 +239,10 @@ require_once ROOT_PATH . '/includes/header.php';
                                     <td class="pk-td-head">
                                         <div class="pk-td-head-row">
                                             <div class="pk-td-head-main">
-                                                <strong class="pk-nowrap"><?= e($job['kode_tiket']) ?></strong>
-                                                <div><?= e($job['nama_barang']) ?></div>
+                                                <span class="pk-code-tag"><?= e($job['kode_tiket']) ?></span>
+                                                <div class="mt-1"><strong><?= e($job['nama_barang']) ?></strong></div>
                                                 <?php if (!empty($job['id_alat_hub'])): ?>
-                                                    <div><span class="pk-badge pk-badge--danger mt-1">Inventaris Hub</span></div>
+                                                    <div class="mt-1"><span class="pk-tag pk-tag--accent">Inventaris Hub</span></div>
                                                 <?php endif; ?>
                                             </div>
                                             <span class="pk-mobile-badge"><?= badge_status_tiket($job['status_tiket']) ?></span>
@@ -250,7 +250,7 @@ require_once ROOT_PATH . '/includes/header.php';
                                     </td>
                                     <td data-label="Pelapor">
                                         <strong><?= e($job['nama_pelapor']) ?></strong><br>
-                                        <span class="text-muted" style="font-size:0.82rem;"><?= e($job['no_hp']) ?> &bull; <?= e($job['metode_cek']) ?></span>
+                                        <span class="pk-td-sub"><?= e($job['no_hp']) ?> &bull; <?= e($job['metode_cek']) ?></span>
                                     </td>
                                     <td data-label="Diagnosis">
                                         <div><?= e($job['diagnosis_teknisi']) ?></div>
@@ -266,7 +266,7 @@ require_once ROOT_PATH . '/includes/header.php';
                                     <td class="pk-desktop-cell" data-label="Status"><?= badge_status_tiket($job['status_tiket']) ?></td>
                                     <td class="pk-td-actions<?= $has_job_action ? '' : ' is-empty' ?>">
                                         <?php if ($job['status_tiket'] === 'Dikerjakan' && (int)$job['persetujuan_warga'] === 1): ?>
-                                            <form method="post" action="<?= BASE_URL ?>/mitra/antrean_teknisi.php">
+                                            <form method="post" action="<?= BASE_URL ?>/mitra/antrean_teknisi.php" data-confirm="Tandai perbaikan <?= e($job['kode_tiket']) ?> siap diambil?" data-confirm-title="Siap Diambil" data-confirm-btn="Tandai Siap" data-confirm-tone="ok">
                                                 <input type="hidden" name="action" value="mark_ready">
                                                 <input type="hidden" name="id_tiket" value="<?= (int)$job['id_tiket'] ?>">
                                                 <button type="submit" class="btn btn-secondary">

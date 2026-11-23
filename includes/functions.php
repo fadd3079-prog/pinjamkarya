@@ -1,5 +1,38 @@
 <?php
 
+function format_nama_pengguna(string $nama): string {
+    $clean = trim((string)preg_replace('/\s*\([^)]*(?:Warga|Mitra|Admin|Teknisi|Skor)[^)]*\)\s*$/iu', '', $nama));
+    return $clean !== '' ? $clean : trim($nama);
+}
+
+function user_role_label(array $user): string {
+    $role = (string)($user['role'] ?? 'warga');
+    if ($role === 'admin') {
+        return 'Admin';
+    }
+    if ($role === 'mitra') {
+        $is_k = !empty($user['is_kontributor']);
+        $is_t = !empty($user['is_teknisi']);
+        if ($is_k && $is_t) {
+            return 'Mitra & Teknisi';
+        }
+        return $is_t ? 'Teknisi' : 'Mitra';
+    }
+    return 'Warga';
+}
+
+function render_role_badge(array $user, string $extra_class = ''): string {
+    $role = (string)($user['role'] ?? 'warga');
+    $mod = 'warga';
+    if ($role === 'admin') {
+        $mod = 'admin';
+    } elseif ($role === 'mitra') {
+        $mod = 'mitra';
+    }
+    $cls = 'pk-role-tag pk-role-tag--' . $mod . ($extra_class !== '' ? ' ' . trim($extra_class) : '');
+    return '<span class="' . $cls . '">' . e(user_role_label($user)) . '</span>';
+}
+
 function e($string): string {
     return htmlspecialchars((string)$string, ENT_QUOTES, 'UTF-8');
 }
@@ -27,6 +60,35 @@ function format_tanggal(?string $date_str): string {
     return "$d $m $y";
 }
 
+function render_alert(string $type, string $message, bool $closable = true, string $icon_override = '', string $extra_class = ''): string {
+    $type_map = [
+        'success' => 'pk-alert--success',
+        'warning' => 'pk-alert--warning',
+        'danger'  => 'pk-alert--danger',
+        'error'   => 'pk-alert--danger',
+        'info'    => 'pk-alert--info'
+    ];
+    $css_class = $type_map[$type] ?? 'pk-alert--info';
+    if ($extra_class !== '') {
+        $css_class .= ' ' . trim($extra_class);
+    }
+    $default_icon = $type === 'success'
+        ? 'check-circle'
+        : (($type === 'danger' || $type === 'error' || $type === 'warning') ? 'alert-triangle' : 'info');
+    $icon_name = $icon_override !== '' ? $icon_override : $default_icon;
+    $close_btn = $closable
+        ? '<button type="button" class="pk-alert-close" aria-label="Tutup pesan">' . svg_icon('x', 15) . '</button>'
+        : '';
+
+    return '<div class="pk-alert ' . $css_class . '" role="alert">'
+        . '<div class="pk-alert-body">'
+        . '<span class="pk-alert-icon">' . svg_icon($icon_name, 16) . '</span>'
+        . '<span class="pk-alert-text">' . e($message) . '</span>'
+        . '</div>'
+        . $close_btn
+        . '</div>';
+}
+
 function set_flash(string $type, string $message): void {
     $_SESSION['flash'] = [
         'type' => $type,
@@ -40,21 +102,24 @@ function get_flash(): string {
     }
     $flash = $_SESSION['flash'];
     unset($_SESSION['flash']);
+    return render_alert((string)($flash['type'] ?? 'info'), (string)($flash['message'] ?? ''));
+}
 
-    $type_map = [
-        'success' => 'pk-alert--success',
-        'warning' => 'pk-alert--warning',
-        'danger'  => 'pk-alert--danger',
-        'error'   => 'pk-alert--danger',
-        'info'    => 'pk-alert--info'
+function set_modal_feedback(string $type, string $message, array $old = []): void {
+    $_SESSION['modal_feedback'] = [
+        'type' => $type,
+        'message' => $message,
+        'old' => $old,
     ];
-    $css_class = $type_map[$flash['type']] ?? 'pk-alert--info';
-    $icon = svg_icon($flash['type'] === 'success' ? 'check-circle' : ($flash['type'] === 'danger' || $flash['type'] === 'error' ? 'alert-triangle' : 'info'), 20);
+}
 
-    return '<div class="pk-alert ' . $css_class . '" role="alert">'
-        . '<div class="d-flex align-center gap-2">' . $icon . '<span>' . e($flash['message']) . '</span></div>'
-        . '<button type="button" class="pk-alert-close" aria-label="Tutup pesan">' . svg_icon('x', 16) . '</button>'
-        . '</div>';
+function get_modal_feedback(): ?array {
+    if (!isset($_SESSION['modal_feedback']) || !is_array($_SESSION['modal_feedback'])) {
+        return null;
+    }
+    $fb = $_SESSION['modal_feedback'];
+    unset($_SESSION['modal_feedback']);
+    return $fb;
 }
 
 function require_login(): void {
@@ -239,15 +304,33 @@ function build_placeholder_svg(string $label, string $bg_color, string $ring_str
     return 'data:image/svg+xml;utf8,' . rawurlencode($svg);
 }
 
-function get_gambar_alat(?string $filename, string $label = 'Perkakas Komunitas'): string {
+function get_gambar_alat_info(?string $filename, string $label = 'Perkakas Komunitas'): array {
     $clean = trim((string)$filename);
     if ($clean !== '' && $clean !== 'default_alat.jpg') {
         $full_path = UPLOAD_ALAT_PATH . $clean;
         if (file_exists($full_path) && is_file($full_path)) {
-            return BASE_URL . '/assets/uploads/alat/' . rawurlencode($clean);
+            $info = @getimagesize($full_path);
+            $w = is_array($info) && !empty($info[0]) ? (int)$info[0] : 640;
+            $h = is_array($info) && !empty($info[1]) ? (int)$info[1] : 400;
+            $ratio = $w > 0 ? round($h / $w, 4) : 0.625;
+            return [
+                'url'    => BASE_URL . '/assets/uploads/alat/' . rawurlencode($clean),
+                'width'  => $w,
+                'height' => $h,
+                'ratio'  => $ratio > 0 ? $ratio : 0.625,
+            ];
         }
     }
-    return build_placeholder_svg($label, '#ebe9e4', '#dbd9d3', '#686660');
+    return [
+        'url'    => build_placeholder_svg($label, '#ebe9e4', '#dbd9d3', '#686660'),
+        'width'  => 640,
+        'height' => 400,
+        'ratio'  => 0.625,
+    ];
+}
+
+function get_gambar_alat(?string $filename, string $label = 'Perkakas Komunitas'): string {
+    return get_gambar_alat_info($filename, $label)['url'];
 }
 
 function get_gambar_tiket(?string $filename, string $label = 'Barang Perbaikan'): string {
@@ -319,8 +402,8 @@ function badge_status_alat(string $status): string {
     $map = [
         'Tersedia'            => 'pk-badge--success',
         'Dipinjam'            => 'pk-badge--primary',
-        'Perawatan'           => 'pk-badge--danger',
-        'Menunggu Verifikasi' => 'pk-badge--warning',
+        'Perawatan'           => 'pk-badge--warning',
+        'Menunggu Verifikasi' => 'pk-badge--danger',
     ];
     $cls = $map[$status] ?? 'pk-badge--muted';
     return '<span class="pk-badge ' . $cls . '">' . e($status) . '</span>';
@@ -350,6 +433,16 @@ function badge_status_tiket(string $status): string {
     return '<span class="pk-badge ' . $cls . '">' . e($status) . '</span>';
 }
 
+function badge_kondisi_fisik(string $kondisi): string {
+    $map = [
+        'Baik'         => 'pk-badge--success',
+        'Rusak Ringan' => 'pk-badge--warning',
+        'Rusak Berat'  => 'pk-badge--danger',
+    ];
+    $cls = $map[$kondisi] ?? 'pk-badge--muted';
+    return '<span class="pk-badge ' . $cls . '">' . e($kondisi) . '</span>';
+}
+
 function brand_logo_paths(string $body_color, string $accent_color): string {
     return '<path fill="' . $body_color . '" d="M438 107q-3-3-7-3h-83q-7 0-8 8v44h-40v-44q-1-8-8-8h-88q-7 0-8 8v44h-43v-44q0-8-8-8H66q-4 0-7 3L1 192l-1 4v56q1 7 8 8h83q8 0 8-8l2-33h60v33q1 7 8 8h164q8-1 8-8v-33h60l1 33q1 8 8 8h81q7-1 8-8v-63l-2-5zM491 273h-82q-8 1-9 9v18h-67v-18q0-8-8-9H167q-8 1-8 9v18H98v-18q-1-8-8-9H8q-7 1-8 9v153q1 7 8 8h483q7-1 8-8V282q-1-8-8-9zM324 149q7 0 8-8v-41c0-2-4-44-83-44-78 0-82 42-82 44v41a8 8 0 1 0 16 0v-40c0-3 6-29 66-29 61 0 66 26 67 29v40q0 8 8 8"/>'
          . '<path fill="' . $accent_color . '" d="M146 290q8-1 9-8v-46q-1-7-9-8h-36q-7 1-8 8v46q1 7 8 8zM390 290q8-1 8-8v-46q0-7-8-8h-36q-7 1-8 8v46q1 7 8 8z"/>';
@@ -369,14 +462,14 @@ function brand_logo(string $variant = 'dark', int $size = 22): string {
 
 function render_public_nav(string $active = 'home', bool $overlay = false): string {
     $is_logged_in = isset($_SESSION['user']);
-    $home_url = BASE_URL . ($is_logged_in ? '/dashboard.php' : '/index.php');
+    $landing_url = BASE_URL . '/index.php';
     $katalog_url = BASE_URL . '/katalog/index.php';
 
     ob_start();
     ?>
 <header id="site-header" class="site-nav<?= $overlay ? ' site-nav--overlay' : '' ?>">
     <div class="site-nav_shell">
-        <a class="site-nav_brand" href="<?= e($home_url) ?>" aria-label="PinjamKarya, beranda">
+        <a class="site-nav_brand" href="<?= e($landing_url) ?>" aria-label="PinjamKarya, beranda">
             <span class="site-nav_logo-wrap"><?= brand_logo('light', 18) ?></span>
             <span class="site-nav_wordmark">PinjamKarya</span>
         </a>
@@ -388,10 +481,10 @@ function render_public_nav(string $active = 'home', bool $overlay = false): stri
 
         <div class="site-nav_drawer">
             <nav id="site-menu" class="site-nav_menu" aria-label="Navigasi utama">
-                <a class="site-nav_link" href="<?= e($home_url) ?>"<?= $active === 'home' ? ' aria-current="page"' : '' ?>>Home</a>
+                <a class="site-nav_link" href="<?= e($landing_url) ?>"<?= $active === 'home' ? ' aria-current="page"' : '' ?>>Home</a>
                 <a class="site-nav_link" href="<?= e($katalog_url) ?>"<?= $active === 'katalog' ? ' aria-current="page"' : '' ?>>Katalog</a>
                 <?php if ($is_logged_in): ?>
-                    <a class="site-nav_cta" href="<?= BASE_URL ?>/auth/logout.php">Keluar</a>
+                    <a class="site-nav_cta" href="<?= BASE_URL ?>/dashboard.php">Dashboard</a>
                 <?php else: ?>
                     <a class="site-nav_link" href="<?= BASE_URL ?>/auth/register.php">Daftar</a>
                     <a class="site-nav_cta" href="<?= BASE_URL ?>/auth/login.php">Masuk</a>
@@ -406,22 +499,23 @@ function render_public_nav(string $active = 'home', bool $overlay = false): stri
 
 function render_public_footer(): string {
     $is_logged_in = isset($_SESSION['user']);
-    $home_url = BASE_URL . ($is_logged_in ? '/dashboard.php' : '/index.php');
+    $landing_url = BASE_URL . '/index.php';
 
     ob_start();
     ?>
 <footer class="pk-footer">
     <div class="pk-footer-inner">
         <div class="pk-footer-top">
-            <a href="<?= e($home_url) ?>" class="pk-footer-brand">
+            <a href="<?= e($landing_url) ?>" class="pk-footer-brand">
                 <span class="pk-brand-icon"><?= brand_logo('light', 18) ?></span>
                 <span>PinjamKarya.</span>
             </a>
             <nav aria-label="Navigasi footer">
                 <ul class="pk-footer-links">
-                    <li><a href="<?= e($home_url) ?>">Home</a></li>
+                    <li><a href="<?= e($landing_url) ?>">Home</a></li>
                     <li><a href="<?= BASE_URL ?>/katalog/index.php">Katalog</a></li>
                     <?php if ($is_logged_in): ?>
+                        <li><a href="<?= BASE_URL ?>/dashboard.php">Dashboard</a></li>
                         <li><a href="<?= BASE_URL ?>/auth/logout.php">Keluar</a></li>
                     <?php else: ?>
                         <li><a href="<?= BASE_URL ?>/auth/login.php">Masuk</a></li>
@@ -443,21 +537,32 @@ function render_public_footer(): string {
 function render_tool_card(array $alat, string $detail_url, string $heading_tag = 'h2'): string {
     $tag = in_array($heading_tag, ['h2', 'h3'], true) ? $heading_tag : 'h2';
     $biaya = (float)($alat['biaya_perawatan'] ?? 0) <= 0 ? 'Gratis' : rupiah((float)$alat['biaya_perawatan']);
-    $is_maintenance = ($alat['status_alat'] ?? '') === 'Perawatan';
+    $status_alat = (string)($alat['status_alat'] ?? 'Tersedia');
+    $is_unavailable = !empty($alat['is_unavailable']) || ($status_alat !== 'Tersedia');
+    $img_info = get_gambar_alat_info($alat['foto_alat'] ?? '', $alat['nama_alat'] ?? '');
 
     ob_start();
     ?>
-<article class="pk-tool-card<?= $is_maintenance ? ' is-maintenance' : '' ?>">
+<article class="pk-tool-card<?= $is_unavailable ? ' is-unavailable' : '' ?>"
+         data-ratio="<?= e((string)$img_info['ratio']) ?>"
+         style="--ratio: <?= e((string)$img_info['ratio']) ?>;">
     <div class="pk-tool-media">
-        <img src="<?= e(get_gambar_alat($alat['foto_alat'] ?? '', $alat['nama_alat'] ?? '')) ?>"
+        <img src="<?= e($img_info['url']) ?>"
              alt="<?= e($alat['nama_alat'] ?? '') ?>"
-             width="640"
-             height="480"
+             width="<?= (int)$img_info['width'] ?>"
+             height="<?= (int)$img_info['height'] ?>"
              loading="lazy">
     </div>
 
     <div class="pk-tool-status">
-        <?= badge_status_alat((string)($alat['status_alat'] ?? '')) ?>
+        <?php if ($is_unavailable): ?>
+            <span class="pk-badge pk-badge--unavailable">Tidak Tersedia</span>
+            <?php if ($status_alat !== 'Tersedia'): ?>
+                <?= badge_status_alat($status_alat) ?>
+            <?php endif; ?>
+        <?php else: ?>
+            <?= badge_status_alat($status_alat) ?>
+        <?php endif; ?>
     </div>
 
     <div class="pk-tool-shade">
@@ -471,7 +576,7 @@ function render_tool_card(array $alat, string $detail_url, string $heading_tag =
         </div>
     </div>
 
-    <a href="<?= e($detail_url) ?>" class="pk-tool-hit" aria-label="<?= e(($alat['nama_alat'] ?? '') . ' — ' . ($alat['status_alat'] ?? '')) ?>"></a>
+    <a href="<?= e($detail_url) ?>" class="pk-tool-hit" aria-label="<?= e(($alat['nama_alat'] ?? '') . ' - ' . ($is_unavailable ? 'Tidak Tersedia (' . $status_alat . ')' : $status_alat)) ?>"></a>
 </article>
     <?php
     return ob_get_clean();
@@ -536,6 +641,8 @@ function svg_icon(string $name, int $size = 20): string {
             return "<svg $attr><circle cx=\"12\" cy=\"12\" r=\"10\"/><polyline points=\"12 6 12 12 16 14\"/></svg>";
         case 'arrow-down':
             return "<svg $attr><line x1=\"12\" y1=\"5\" x2=\"12\" y2=\"19\"/><polyline points=\"19 12 12 19 5 12\"/></svg>";
+        case 'arrow-right':
+            return "<svg $attr><line x1=\"5\" y1=\"12\" x2=\"19\" y2=\"12\"/><polyline points=\"12 5 19 12 12 19\"/></svg>";
         case 'home':
             return "<svg $attr><path d=\"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"/><polyline points=\"9 22 9 12 15 12 15 22\"/></svg>";
         case 'edit':
@@ -544,6 +651,8 @@ function svg_icon(string $name, int $size = 20): string {
             return "<svg $attr><polyline points=\"3 6 5 6 21 6\"/><path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\"/><line x1=\"10\" y1=\"11\" x2=\"10\" y2=\"17\"/><line x1=\"14\" y1=\"11\" x2=\"14\" y2=\"17\"/></svg>";
         case 'eye':
             return "<svg $attr><path d=\"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg>";
+        case 'globe':
+            return "<svg $attr><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"2\" y1=\"12\" x2=\"22\" y2=\"12\"/><path d=\"M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z\"/></svg>";
         default:
             return "<svg $attr><circle cx=\"12\" cy=\"12\" r=\"9\"/></svg>";
     }

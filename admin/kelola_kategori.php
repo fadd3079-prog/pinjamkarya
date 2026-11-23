@@ -13,9 +13,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $estimasi_harga_baru = (float)($_POST['estimasi_harga_baru'] ?? 0.00);
 
         if ($nama_kategori === '' || $panduan_keselamatan === '') {
-            set_flash('warning', 'Nama kategori dan panduan keselamatan wajib diisi.');
+            set_modal_feedback('warning', 'Nama kategori dan panduan keselamatan wajib diisi.', $_POST);
+            $err_q = ($action === 'update' && $id_kategori > 0) ? '?edit=' . $id_kategori : '?open=form';
+            header('Location: ' . BASE_URL . '/admin/kelola_kategori.php' . $err_q);
+            exit;
         } elseif ($rata_rata_berat_kg <= 0 || $estimasi_harga_baru < 0) {
-            set_flash('warning', 'Berat harus lebih dari 0 kg dan harga tidak boleh negatif.');
+            set_modal_feedback('warning', 'Berat harus lebih dari 0 kg dan harga tidak boleh negatif.', $_POST);
+            $err_q = ($action === 'update' && $id_kategori > 0) ? '?edit=' . $id_kategori : '?open=form';
+            header('Location: ' . BASE_URL . '/admin/kelola_kategori.php' . $err_q);
+            exit;
         } else {
             if ($action === 'create') {
                 $stmt = mysqli_prepare($conn, 'INSERT INTO kategori_alat (nama_kategori, panduan_keselamatan, rata_rata_berat_kg, estimasi_harga_baru) VALUES (?, ?, ?, ?)');
@@ -74,6 +80,10 @@ if (isset($_GET['edit'])) {
     mysqli_stmt_close($stmt_e);
 }
 
+$modal_fb = get_modal_feedback();
+$form_val = !empty($modal_fb['old']) ? $modal_fb['old'] : ($edit_data ?? []);
+$modal_open = ($edit_data !== null) || isset($_GET['open']) || ($modal_fb !== null);
+
 $res_list = mysqli_query($conn, "SELECT k.*,
     (SELECT COUNT(*) FROM aset_alat a WHERE a.id_kategori = k.id_kategori) AS total_alat,
     (SELECT COUNT(*) FROM tiket_perbaikan t WHERE t.id_kategori = k.id_kategori) AS total_tiket
@@ -85,56 +95,13 @@ require_once ROOT_PATH . '/includes/header.php';
 
 <div class="pk-page-header">
     <h1>Master Kategori</h1>
+    <button type="button" class="btn btn-primary" data-modal-target="#modalKategori">
+        <?= svg_icon('plus', 16) ?>
+        <span>Tambah Kategori</span>
+    </button>
 </div>
 
-<div class="pk-grid pk-grid--2">
-    <section class="pk-card" aria-labelledby="form-kat-heading">
-        <div class="pk-card-header">
-            <h2 id="form-kat-heading" class="pk-card-title">
-                <?= svg_icon($edit_data ? 'clipboard' : 'plus', 18) ?>
-                <span><?= $edit_data ? 'Edit Kategori #' . (int)$edit_data['id_kategori'] : 'Tambah Kategori' ?></span>
-            </h2>
-            <?php if ($edit_data): ?>
-                <a href="<?= BASE_URL ?>/admin/kelola_kategori.php" class="btn btn-muted">Batal</a>
-            <?php endif; ?>
-        </div>
-
-        <form method="post" action="<?= BASE_URL ?>/admin/kelola_kategori.php">
-            <input type="hidden" name="action" value="<?= $edit_data ? 'update' : 'create' ?>">
-            <?php if ($edit_data): ?>
-                <input type="hidden" name="id_kategori" value="<?= (int)$edit_data['id_kategori'] ?>">
-            <?php endif; ?>
-
-            <div class="form-group">
-                <label for="nama_kategori" class="form-label">Nama Kategori</label>
-                <input type="text" id="nama_kategori" name="nama_kategori" class="form-control" value="<?= e($edit_data['nama_kategori'] ?? '') ?>" required>
-            </div>
-
-            <div class="pk-grid pk-grid--2">
-                <div class="form-group">
-                    <label for="rata_rata_berat_kg" class="form-label">Rata-rata Berat (Kg)</label>
-                    <input type="number" step="0.01" min="0.1" id="rata_rata_berat_kg" name="rata_rata_berat_kg" class="form-control" value="<?= e($edit_data['rata_rata_berat_kg'] ?? '2.50') ?>" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="estimasi_harga_baru" class="form-label">Estimasi Harga Baru (Rp)</label>
-                    <input type="number" step="1000" min="0" id="estimasi_harga_baru" name="estimasi_harga_baru" class="form-control" value="<?= e(isset($edit_data['estimasi_harga_baru']) ? (int)$edit_data['estimasi_harga_baru'] : '500000') ?>" required>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="panduan_keselamatan" class="form-label">Panduan Keselamatan Kerja</label>
-                <textarea id="panduan_keselamatan" name="panduan_keselamatan" class="form-control" rows="5" required><?= e($edit_data['panduan_keselamatan'] ?? '') ?></textarea>
-            </div>
-
-            <button type="submit" class="btn btn-primary w-100">
-                <?= svg_icon('check-circle', 16) ?>
-                <span><?= $edit_data ? 'Simpan Perubahan' : 'Tambah Kategori' ?></span>
-            </button>
-        </form>
-    </section>
-
-    <section class="pk-table-card" aria-labelledby="list-kat-heading">
+<section class="pk-table-card" aria-labelledby="list-kat-heading">
         <div class="pk-table-card-head">
             <h2 id="list-kat-heading" class="pk-card-title">
                 <?= svg_icon('tag', 18) ?>
@@ -152,39 +119,101 @@ require_once ROOT_PATH . '/includes/header.php';
                     </tr>
                 </thead>
                 <tbody>
-                    <?php while ($row = mysqli_fetch_assoc($res_list)): ?>
+                    <?php if (mysqli_num_rows($res_list) === 0): ?>
                         <tr>
-                            <td class="pk-td-head">
-                                <strong><?= e($row['nama_kategori']) ?></strong>
-                                <div class="mt-1 d-flex gap-1 flex-wrap">
-                                    <span class="pk-badge pk-badge--muted"><?= (int)$row['total_alat'] ?> Alat</span>
-                                    <span class="pk-badge pk-badge--muted"><?= (int)$row['total_tiket'] ?> Tiket</span>
-                                </div>
-                            </td>
-                            <td class="pk-nowrap" data-label="Parameter">
-                                <?= number_format((float)$row['rata_rata_berat_kg'], 2, ',', '.') ?> Kg<br>
-                                <span class="text-muted"><?= rupiah($row['estimasi_harga_baru']) ?></span>
-                            </td>
-                            <td class="pk-td-actions">
-                                <div class="btn-group-wrap">
-                                    <a href="<?= BASE_URL ?>/admin/kelola_kategori.php?edit=<?= (int)$row['id_kategori'] ?>" class="btn btn-outline btn-icon" title="Edit" aria-label="Edit <?= e($row['nama_kategori']) ?>">
-                                        <?= svg_icon('edit', 16) ?>
-                                    </a>
-                                    <form method="post" action="<?= BASE_URL ?>/admin/kelola_kategori.php" onsubmit="return confirm('Hapus kategori ini?');">
-                                        <input type="hidden" name="action" value="delete">
-                                        <input type="hidden" name="id_kategori" value="<?= (int)$row['id_kategori'] ?>">
-                                        <button type="submit" class="btn btn-danger btn-icon" title="Hapus" aria-label="Hapus <?= e($row['nama_kategori']) ?>" <?= ((int)$row['total_alat'] > 0 || (int)$row['total_tiket'] > 0) ? 'disabled' : '' ?>>
-                                            <?= svg_icon('trash', 16) ?>
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
+                            <td colspan="3" class="text-center text-muted">Belum ada kategori terdaftar.</td>
                         </tr>
-                    <?php endwhile; ?>
+                    <?php else: ?>
+                        <?php while ($row = mysqli_fetch_assoc($res_list)): ?>
+                            <tr>
+                                <td class="pk-td-head">
+                                    <strong><?= e($row['nama_kategori']) ?></strong>
+                                    <div class="mt-1 d-flex gap-1 flex-wrap">
+                                        <span class="pk-tag"><?= (int)$row['total_alat'] ?> Alat</span>
+                                        <span class="pk-tag"><?= (int)$row['total_tiket'] ?> Tiket</span>
+                                    </div>
+                                </td>
+                                <td class="pk-nowrap" data-label="Parameter">
+                                    <?= number_format((float)$row['rata_rata_berat_kg'], 2, ',', '.') ?> Kg<br>
+                                    <span class="text-muted"><?= rupiah($row['estimasi_harga_baru']) ?></span>
+                                </td>
+                                <td class="pk-td-actions">
+                                    <div class="btn-group-wrap">
+                                        <a href="<?= BASE_URL ?>/admin/kelola_kategori.php?edit=<?= (int)$row['id_kategori'] ?>" class="btn btn-outline btn-icon" title="Edit" aria-label="Edit <?= e($row['nama_kategori']) ?>">
+                                            <?= svg_icon('edit', 16) ?>
+                                        </a>
+                                        <form method="post" action="<?= BASE_URL ?>/admin/kelola_kategori.php" data-confirm="Hapus kategori <?= e($row['nama_kategori']) ?>?" data-confirm-title="Hapus Kategori" data-confirm-btn="Hapus" data-confirm-tone="danger">
+                                            <input type="hidden" name="action" value="delete">
+                                            <input type="hidden" name="id_kategori" value="<?= (int)$row['id_kategori'] ?>">
+                                            <button type="submit" class="btn btn-danger btn-icon" title="Hapus" aria-label="Hapus <?= e($row['nama_kategori']) ?>" <?= ((int)$row['total_alat'] > 0 || (int)$row['total_tiket'] > 0) ? 'disabled' : '' ?>>
+                                                <?= svg_icon('trash', 16) ?>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endwhile; ?>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
     </section>
+
+<div id="modalKategori"
+     class="pk-modal<?= $modal_open ? ' open' : '' ?>"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="form-kat-heading"
+     aria-hidden="<?= $modal_open ? 'false' : 'true' ?>"<?= $edit_data ? ' data-cancel-url="' . BASE_URL . '/admin/kelola_kategori.php"' : '' ?>>
+    <div class="pk-modal-dialog">
+        <div class="pk-card-header">
+            <h2 id="form-kat-heading" class="pk-card-title">
+                <?= svg_icon($edit_data ? 'clipboard' : 'plus', 18) ?>
+                <span><?= $edit_data ? 'Edit Kategori #' . (int)$edit_data['id_kategori'] : 'Tambah Kategori' ?></span>
+            </h2>
+            <button type="button" class="btn btn-muted btn-icon" data-modal-close aria-label="Tutup form">
+                <?= svg_icon('x', 16) ?>
+            </button>
+        </div>
+
+        <?php if ($modal_fb): ?>
+            <?= render_alert((string)$modal_fb['type'], (string)$modal_fb['message']) ?>
+        <?php endif; ?>
+
+        <form method="post" action="<?= BASE_URL ?>/admin/kelola_kategori.php">
+            <input type="hidden" name="action" value="<?= $edit_data ? 'update' : 'create' ?>">
+            <?php if ($edit_data): ?>
+                <input type="hidden" name="id_kategori" value="<?= (int)$edit_data['id_kategori'] ?>">
+            <?php endif; ?>
+
+            <div class="form-group">
+                <label for="nama_kategori" class="form-label">Nama Kategori</label>
+                <input type="text" id="nama_kategori" name="nama_kategori" class="form-control" value="<?= e($form_val['nama_kategori'] ?? '') ?>" required>
+            </div>
+
+            <div class="pk-grid pk-grid--2">
+                <div class="form-group">
+                    <label for="rata_rata_berat_kg" class="form-label">Rata-rata Berat (Kg)</label>
+                    <input type="number" step="0.01" min="0.1" id="rata_rata_berat_kg" name="rata_rata_berat_kg" class="form-control" value="<?= e($form_val['rata_rata_berat_kg'] ?? '2.50') ?>" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="estimasi_harga_baru" class="form-label">Estimasi Harga Baru (Rp)</label>
+                    <input type="number" step="1000" min="0" id="estimasi_harga_baru" name="estimasi_harga_baru" class="form-control" value="<?= e(isset($form_val['estimasi_harga_baru']) ? (int)$form_val['estimasi_harga_baru'] : '500000') ?>" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="panduan_keselamatan" class="form-label">Panduan Keselamatan Kerja</label>
+                <textarea id="panduan_keselamatan" name="panduan_keselamatan" class="form-control" rows="5" required><?= e($form_val['panduan_keselamatan'] ?? '') ?></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">
+                <?= svg_icon('check-circle', 16) ?>
+                <span><?= $edit_data ? 'Simpan Perubahan' : 'Tambah Kategori' ?></span>
+            </button>
+        </form>
+    </div>
 </div>
 
 <?php require_once ROOT_PATH . '/includes/footer.php'; ?>
