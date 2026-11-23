@@ -1,0 +1,2018 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PinjamKarya — Project Showcase (Behance Case Study)</title>
+
+  <!-- Typography: Plus Jakarta Sans (padanan modern dekat Mufaddhol Sans / AdwaitaSans-Variable) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN untuk utilitas layout & responsif -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    /* =========================================================================
+       DESIGN TOKENS ASLI PINJAMKARYA (assets/css/pinjamkarya-ui.css)
+       Warm Editorial Minimalism + WCAG High-Contrast Semantic Status Colors
+       ========================================================================= */
+    :root {
+      --canvas: #f3f2ee;
+      --canvas-soft: #ebe9e4;
+      --surface: #fbfaf8;
+      --charcoal: #1f1f1d;
+      --charcoal-2: #2e2d2a;
+      --ink: #1e1e1c;
+      --ink-2: #353431;
+      --ink-mute: #5c5a55;
+      --ink-faint: #686660;
+      --on-dark: #f3f2ee;
+      --on-dark-mute: #b0aea7;
+      --hairline: #dbd9d3;
+      --hairline-strong: #c3c0b9;
+
+      /* Semantic Status Colors */
+      --ok-fg: #14532d;
+      --ok-bg: #e8f3ec;
+      --ok-alert: #eef6f0;
+      --ok-bd: #9ec8ae;
+
+      --warn-fg: #784208;
+      --warn-bg: #fbf3e2;
+      --warn-alert: #fdf6e9;
+      --warn-bd: #d9b673;
+
+      --err-fg: #8c1d18;
+      --err-bg: #fceceb;
+      --err-alert: #fdf0ef;
+      --err-bd: #d89b98;
+
+      --info-fg: #1e40af;
+      --info-bg: #eff6ff;
+      --info-alert: #f4f8ff;
+      --info-bd: #93c5fd;
+
+      --teal-fg: #0f5257;
+      --teal-bg: #e6f4f4;
+      --teal-bd: #8ecad0;
+
+      --chart-secondary: #b45309;
+
+      --radius-xs: 6px;
+      --radius-sm: 10px;
+      --radius-md: 14px;
+      --radius-lg: 18px;
+      --radius-xl: 22px;
+      --radius-pill: 999px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--canvas);
+      color: var(--ink);
+    }
+
+    body {
+      margin: 0;
+      background-color: var(--canvas);
+      color: var(--ink);
+      font-size: 15px;
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .display-title {
+      letter-spacing: -0.048em;
+      line-height: 1.04;
+    }
+
+    .section-title {
+      letter-spacing: -0.035em;
+      line-height: 1.15;
+    }
+
+    /* Hairline Card System (tanpa shadow berlebihan) */
+    .pk-card {
+      background: var(--surface);
+      border: 1px solid var(--hairline);
+      border-radius: var(--radius-lg);
+    }
+
+    .pk-card-soft {
+      background: var(--canvas-soft);
+      border: 1px solid var(--hairline);
+      border-radius: var(--radius-md);
+    }
+
+    .pk-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: var(--radius-pill);
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.3;
+      border: 1px solid transparent;
+    }
+
+    .pill-ok { color: var(--ok-fg); background: var(--ok-bg); border-color: var(--ok-bd); }
+    .pill-warn { color: var(--warn-fg); background: var(--warn-bg); border-color: var(--warn-bd); }
+    .pill-err { color: var(--err-fg); background: var(--err-bg); border-color: var(--err-bd); }
+    .pill-info { color: var(--info-fg); background: var(--info-bg); border-color: var(--info-bd); }
+    .pill-teal { color: var(--teal-fg); background: var(--teal-bg); border-color: var(--teal-bd); }
+    .pill-dark { color: var(--on-dark); background: var(--charcoal); border-color: var(--charcoal); }
+    .pill-neutral { color: var(--ink-2); background: var(--canvas-soft); border-color: var(--hairline-strong); }
+
+    /* Floating Glass Toolbar */
+    .showcase-toolbar {
+      position: fixed;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(1240px, calc(100% - 24px));
+      z-index: 60;
+      background: rgba(251, 250, 248, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--hairline-strong);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(30, 30, 28, 0.07);
+    }
+
+    /* Slide Wrapper & Behance Container */
+    .showcase-main {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 96px 20px 80px;
+    }
+
+    .showcase-slide {
+      background: var(--surface);
+      border: 1px solid var(--hairline);
+      border-radius: 24px;
+      padding: clamp(24px, 4vw, 52px);
+      margin-bottom: 32px;
+      position: relative;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .showcase-slide--dark {
+      background: var(--charcoal);
+      color: var(--on-dark);
+      border-color: var(--charcoal-2);
+    }
+
+    /* Slide Deck Mode */
+    body.mode-deck .showcase-slide {
+      display: none;
+      margin-bottom: 24px;
+      animation: slideFadeIn 0.28s ease;
+    }
+
+    body.mode-deck .showcase-slide.is-active {
+      display: block;
+    }
+
+    @keyframes slideFadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Deck Bottom Navigation */
+    .deck-nav-bar {
+      display: none;
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 60;
+      background: rgba(31, 31, 29, 0.94);
+      backdrop-filter: blur(12px);
+      color: var(--on-dark);
+      border: 1px solid #3c3b37;
+      border-radius: var(--radius-pill);
+      padding: 8px 14px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+      align-items: center;
+      gap: 14px;
+    }
+
+    body.mode-deck .deck-nav-bar {
+      display: inline-flex;
+    }
+
+    /* Slide Index Watermark Pill */
+    .slide-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ink-mute);
+      margin-bottom: 14px;
+    }
+
+    .slide-kicker-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--canvas-soft);
+      border: 1px solid var(--hairline-strong);
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Edit Mode Styling */
+    body.edit-mode [data-editable] {
+      outline: 1.5px dashed var(--info-fg);
+      background: var(--info-alert);
+      border-radius: 6px;
+      padding: 2px 6px;
+      cursor: text;
+    }
+
+    .upload-trigger {
+      display: none;
+    }
+
+    body.edit-mode .upload-trigger {
+      display: inline-flex;
+    }
+
+    /* Mockup Browser Frame */
+    .browser-frame {
+      background: var(--canvas);
+      border: 1px solid var(--hairline-strong);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .browser-bar {
+      background: var(--canvas-soft);
+      border-bottom: 1px solid var(--hairline);
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .browser-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .browser-dots span {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--hairline-strong);
+    }
+
+    .browser-url {
+      font-size: 11px;
+      color: var(--ink-mute);
+      background: var(--surface);
+      border: 1px solid var(--hairline);
+      padding: 2px 12px;
+      border-radius: 999px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 240px;
+    }
+
+    /* Unavailable Masonry Card Simulation */
+    .mock-unavailable {
+      opacity: 0.56;
+      filter: grayscale(0.75);
+    }
+
+    /* Interactive Flow Tabs */
+    .flow-tab-btn {
+      padding: 8px 16px;
+      border-radius: var(--radius-pill);
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid var(--hairline-strong);
+      background: var(--surface);
+      color: var(--ink-2);
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .flow-tab-btn:hover {
+      background: var(--canvas-soft);
+    }
+
+    .flow-tab-btn.is-active {
+      background: var(--charcoal);
+      color: var(--on-dark);
+      border-color: var(--charcoal);
+    }
+
+    /* Stepper 6 Tahap Simulation */
+    .pk-stepper-mini {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    @media (max-width: 640px) {
+      .pk-stepper-mini {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    /* Toast Notification */
+    .pk-toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 80;
+      background: var(--charcoal);
+      color: var(--on-dark);
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(10px);
+      transition: all 0.25s ease;
+    }
+
+    .pk-toast.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Custom Confirm Modal Simulation */
+    .pk-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      background: rgba(30, 30, 28, 0.45);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .pk-modal-backdrop.is-open {
+      display: flex;
+    }
+
+    /* =========================================================================
+       PRINT / EXPORT PDF RULES
+       ========================================================================= */
+    @media print {
+      @page {
+        size: A4 landscape;
+        margin: 10mm;
+      }
+
+      html, body {
+        background: var(--canvas) !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .no-print,
+      .showcase-toolbar,
+      .deck-nav-bar,
+      .upload-trigger,
+      .pk-toast,
+      .pk-modal-backdrop {
+        display: none !important;
+      }
+
+      .showcase-main {
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+
+      /* Tampilkan semua 12 slide saat cetak meskipun sedang di Mode Deck */
+      body.mode-deck .showcase-slide,
+      .showcase-slide {
+        display: block !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        break-after: page;
+        page-break-after: always;
+        margin-bottom: 16px !important;
+        border-radius: 16px !important;
+        padding: 24px !important;
+        box-shadow: none !important;
+      }
+
+      .showcase-slide:last-child {
+        break-after: auto;
+        page-break-after: auto;
+      }
+
+      .pk-card, .browser-frame {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- =========================================================================
+       FLOATING TOP TOOLBAR (Disembunyikan saat Print / Export PDF)
+       ========================================================================= -->
+  <header class="showcase-toolbar no-print px-3 sm:px-4 py-2.5">
+    <div class="flex flex-wrap items-center justify-between gap-2.5">
+      <!-- Brand Identity -->
+      <a href="#slide-01" class="flex items-center gap-2.5 text-inherit no-underline">
+        <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg" style="background: linear-gradient(145deg, #2e2d2a, #1f1f1d);">
+          <!-- Inline SVG Logo Kotak Perkakas PinjamKarya -->
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f3f2ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+          </svg>
+        </span>
+        <div class="leading-tight">
+          <div class="text-sm font-bold tracking-tight" style="color: var(--ink);">PinjamKarya.</div>
+          <div class="text-[11px]" style="color: var(--ink-mute);">Project Showcase • Case Study</div>
+        </div>
+      </a>
+
+      <!-- Controls Group -->
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- View Mode Toggle -->
+        <div class="inline-flex p-0.5 rounded-full border" style="background: var(--canvas-soft); border-color: var(--hairline-strong);">
+          <button id="btnModeScroll" type="button" class="px-3 py-1 rounded-full text-xs font-semibold transition-all" style="background: var(--charcoal); color: var(--on-dark);">
+            Behance Scroll
+          </button>
+          <button id="btnModeDeck" type="button" class="px-3 py-1 rounded-full text-xs font-semibold transition-all" style="color: var(--ink-2);">
+            Slide Deck (12)
+          </button>
+        </div>
+
+        <!-- Quick Jump Select -->
+        <select id="quickJump" aria-label="Lompat cepat ke bagian" class="text-xs font-medium px-3 py-1.5 rounded-full border outline-none cursor-pointer" style="background: var(--surface); border-color: var(--hairline-strong); color: var(--ink);">
+          <option value="0">01 • Cover & Hero</option>
+          <option value="1">02 • Latar Belakang Masalah</option>
+          <option value="2">03 • Solusi, Closed-Loop & SDGs</option>
+          <option value="3">04 • Manfaat & Nilai Ekonomi</option>
+          <option value="4">05 • Riset & User Persona</option>
+          <option value="5">06 • Arsitektur, DB & User Flow</option>
+          <option value="6">07 • Design System & Style Guide</option>
+          <option value="7">08 • Highlight Modul 1–5</option>
+          <option value="8">09 • Highlight Modul 6–9</option>
+          <option value="9">10 • Screen Walkthrough (6 Layar)</option>
+          <option value="10">11 • Profil Tim (3 Anggota)</option>
+          <option value="11">12 • Penutup & Tech Stack</option>
+        </select>
+
+        <!-- Toggle Edit Mode -->
+        <button id="btnEditToggle" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors cursor-pointer" style="background: var(--surface); border-color: var(--hairline-strong); color: var(--ink);">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          <span id="editBtnLabel">Edit Tim & Screenshot</span>
+        </button>
+
+        <!-- Export PDF -->
+        <button id="btnPrintPdf" type="button" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer" style="background: var(--charcoal); color: var(--on-dark);">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+          <span>Export PDF</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       MAIN SHOWCASE CONTAINER (12 SLIDES / SECTIONS)
+       ========================================================================= -->
+  <main class="showcase-main">
+
+    <!-- =======================================================================
+         SLIDE 01 — COVER & HERO SHOWCASE (IDENTITAS APLIKASI)
+         ======================================================================= -->
+    <section id="slide-01" class="showcase-slide is-active" data-slide-index="0">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <span class="pk-pill pill-neutral">
+          <span class="w-2 h-2 rounded-full" style="background: var(--ok-fg);"></span>
+          UX/UI &amp; Full-Stack Web Case Study • Informatika UNSOED 2026
+        </span>
+        <span class="slide-kicker !mb-0">
+          <span class="slide-kicker-num">01 / 12</span>
+          <span>Identitas Aplikasi</span>
+        </span>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        <!-- Left Copy -->
+        <div class="lg:col-span-6">
+          <div class="inline-flex items-center gap-2.5 mb-4">
+            <span class="inline-flex items-center justify-center w-11 h-11 rounded-2xl" style="background: linear-gradient(145deg, #2e2d2a, #1f1f1d);">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f3f2ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            </span>
+            <span class="text-xs font-bold uppercase tracking-widest" style="color: var(--ink-mute);">Hub Komunitas Purwokerto Utara</span>
+          </div>
+
+          <h1 class="display-title text-5xl sm:text-6xl lg:text-7xl font-extrabold mb-4" style="color: var(--ink);">
+            PinjamKarya<span style="color: var(--ok-fg);">.</span>
+          </h1>
+          <p class="text-lg sm:text-xl font-semibold mb-3" style="color: var(--ink-2);">
+            Library of Things &amp; Right-to-Repair Hub Berbasis Komunitas
+          </p>
+          <p class="text-sm sm:text-base mb-6" style="color: var(--ink-mute);">
+            <strong style="color: var(--ink);">Berbagi Perkakas Tanpa Beli Baru. Perbaiki Barang Tanpa Rasa Khawatir.</strong>
+            Platform web ekonomi sirkular warga &amp; UMKM yang memadukan peminjaman perkakas berlandaskan <em>Trust Score</em>, inspeksi fisik berlapis, dan layanan perbaikan mandiri 6 tahap — dibangun 100% Native tanpa framework eksternal.
+          </p>
+
+          <div class="flex flex-wrap gap-2">
+            <span class="pk-pill pill-ok">SDG 12 • Konsumsi Bertanggung Jawab</span>
+            <span class="pk-pill pill-info">SDG 10 • Berkurangnya Kesenjangan</span>
+            <span class="pk-pill pill-teal">Zero Framework &amp; Zero CDN</span>
+          </div>
+        </div>
+
+        <!-- Right Visual: Layered Browser Mockup (Landing + Bento Mini Preview) -->
+        <div class="lg:col-span-6">
+          <div class="browser-frame">
+            <div class="browser-bar">
+              <div class="browser-dots"><span></span><span></span><span></span></div>
+              <div class="browser-url">localhost/pinjamkarya/index.php</div>
+              <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full" style="background: var(--ok-bg); color: var(--ok-fg);">Live Hub</span>
+            </div>
+            <div class="p-4 sm:p-5 space-y-4" style="background: var(--canvas);">
+              <!-- Floating Glass Nav Mini -->
+              <div class="flex items-center justify-between px-3.5 py-2 rounded-full border" style="background: rgba(251,250,248,0.92); border-color: var(--hairline-strong);">
+                <span class="text-xs font-extrabold tracking-tight">PinjamKarya.</span>
+                <div class="hidden sm:flex items-center gap-3 text-[11px] font-medium" style="color: var(--ink-mute);">
+                  <span>Katalog</span>
+                  <span>Layanan</span>
+                  <span>Dampak SDGs</span>
+                </div>
+                <span class="text-[10px] font-semibold px-2.5 py-1 rounded-full" style="background: var(--charcoal); color: var(--on-dark);">Dashboard</span>
+              </div>
+
+              <!-- Hero Split Preview -->
+              <div class="grid grid-cols-12 gap-3 items-center p-4 rounded-2xl border" style="background: var(--surface); border-color: var(--hairline);">
+                <div class="col-span-7 space-y-2">
+                  <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style="background: var(--ok-bg); color: var(--ok-fg);">Ekonomi Sirkular</span>
+                  <div class="text-base sm:text-lg font-extrabold leading-tight tracking-tight">Pinjam Perkakas. Perbaiki Barang Rusak.</div>
+                  <div class="text-[11px]" style="color: var(--ink-mute);">Akses alat kerja UMKM &amp; medis tanpa deposit tunai.</div>
+                  <div class="flex gap-1.5 pt-1">
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-semibold" style="background: var(--charcoal); color: var(--on-dark);">Lihat Katalog</span>
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-semibold border" style="border-color: var(--hairline-strong);">Lapor Servis</span>
+                  </div>
+                </div>
+                <div class="col-span-5">
+                  <!-- Stylized Notched SVG Tool Illustration -->
+                  <div class="rounded-xl p-3 border flex flex-col items-center justify-center" style="background: var(--canvas-soft); border-color: var(--hairline);">
+                    <svg viewBox="0 0 120 84" class="w-full h-auto" fill="none">
+                      <rect x="6" y="6" width="108" height="72" rx="12" fill="#fbfaf8" stroke="#c3c0b9" stroke-width="1.5"/>
+                      <path d="M32 54L54 32" stroke="#1f1f1d" stroke-width="5" stroke-linecap="round"/>
+                      <circle cx="62" cy="24" r="9" stroke="#14532d" stroke-width="3" fill="#e8f3ec"/>
+                      <rect x="70" y="42" width="30" height="16" rx="4" fill="#1f1f1d"/>
+                      <path d="M77 42V37C77 35.3 78.3 34 80 34H90C91.7 34 93 35.3 93 37V42" stroke="#1f1f1d" stroke-width="2.5"/>
+                      <circle cx="85" cy="50" r="2.5" fill="#f3f2ee"/>
+                      <path d="M22 24H42" stroke="#b45309" stroke-width="2.5" stroke-linecap="round"/>
+                      <path d="M22 31H35" stroke="#9ec8ae" stroke-width="2.5" stroke-linecap="round"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3 Live Impact Cards Mini -->
+              <div class="grid grid-cols-3 gap-2.5">
+                <div class="p-2.5 rounded-xl border" style="background: var(--surface); border-color: var(--hairline);">
+                  <div class="text-[10px]" style="color: var(--ink-mute);">Alat Tersedia</div>
+                  <div class="text-base font-bold tabular-nums" style="color: var(--ok-fg);">20 Unit</div>
+                </div>
+                <div class="p-2.5 rounded-xl border" style="background: var(--surface); border-color: var(--hairline);">
+                  <div class="text-[10px]" style="color: var(--ink-mute);">Cegah E-Waste</div>
+                  <div class="text-base font-bold tabular-nums" style="color: var(--info-fg);">4 Tiket</div>
+                </div>
+                <div class="p-2.5 rounded-xl border" style="background: var(--surface); border-color: var(--hairline);">
+                  <div class="text-[10px]" style="color: var(--ink-mute);">Hemat Warga</div>
+                  <div class="text-base font-bold tabular-nums" style="color: var(--warn-fg);">Rp 1,09 Jt+</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Behance Style Metadata Bar -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8 pt-6 border-t" style="border-color: var(--hairline);">
+        <div>
+          <div class="text-[11px] font-bold uppercase tracking-wider mb-1" style="color: var(--ink-mute);">Platform</div>
+          <div class="text-sm font-semibold">Web App (Responsive Desktop &amp; Mobile)</div>
+        </div>
+        <div>
+          <div class="text-[11px] font-bold uppercase tracking-wider mb-1" style="color: var(--ink-mute);">Tech Stack</div>
+          <div class="text-sm font-semibold">PHP 8.2 Native, MySQL InnoDB, Vanilla CSS3 &amp; JS ES6+, OAuth cURL</div>
+        </div>
+        <div>
+          <div class="text-[11px] font-bold uppercase tracking-wider mb-1" style="color: var(--ink-mute);">Architecture</div>
+          <div class="text-sm font-semibold">Zero Framework &amp; Zero Library • 9 Modul Terintegrasi</div>
+        </div>
+        <div>
+          <div class="text-[11px] font-bold uppercase tracking-wider mb-1" style="color: var(--ink-mute);">Tim Pengembang</div>
+          <div class="text-sm font-semibold">Aflah • Balqis • Fadhol (UNSOED)</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         SLIDE 02 — LATAR BELAKANG & AKAR MASALAH
+         ======================================================================= -->
+    <section id="slide-02" class="showcase-slide" data-slide-index="1">
+      <div class="slide-kicker">
+        <span class="slide-kicker-num">02 / 12</span>
+        <span>The Problem Context • Latar Belakang Masalah</span>
+      </div>
+
+      <div class="max-w-3xl mb-7">
+        <h2 class="section-title text-2xl sm:text-4xl font-extrabold mb-3">
+          Paradoks Kepemilikan Perkakas &amp; Gelombang Sampah Elektronik di Masyarakat
+        </h2>
+        <p class="text-sm sm:text-base" style="color: var(--ink-mute);">
+          Di permukiman urban maupun semi-urban, kebutuhan warga dan pelaku UMKM berhadapan dengan tiga gesekan nyata yang menguras anggaran sekaligus memperparah timbulan limbah.
+        </p>
+      </div>
+
+      <!-- 3 Problem Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-7">
+        <article class="pk-card p-5 flex flex-col justify-between" style="background: var(--warn-alert); border-color: var(--warn-bd);">
+          <div>
+            <span class="pk-pill pill-warn mb-3">Masalah 01</span>
+            <h3 class="text-base font-bold mb-2" style="color: var(--ink);">Pemborosan Kebutuhan Sesaat</h3>
+            <p class="text-sm" style="color: var(--ink-2);">
+              Membeli bor listrik, tangga aluminium, <em>impulse sealer</em> UMKM, atau kursi roda hanya untuk pemakaian 1–3 hari menguras anggaran rumah tangga dan modal usaha rintisan.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t text-xs font-semibold" style="border-color: var(--warn-bd); color: var(--warn-fg);">
+            Dampak: Biaya belanja tinggi untuk alat berutilitas rendah
+          </div>
+        </article>
+
+        <article class="pk-card p-5 flex flex-col justify-between" style="background: var(--info-alert); border-color: var(--info-bd);">
+          <div>
+            <span class="pk-pill pill-info mb-3">Masalah 02</span>
+            <h3 class="text-base font-bold mb-2" style="color: var(--ink);">Aset Idle vs Krisis Kepercayaan</h3>
+            <p class="text-sm" style="color: var(--ink-2);">
+              Banyak perkakas layak pakai menganggur di gudang warga, tetapi pemilik enggan meminjamkan secara informal karena tidak ada jadwal pasti dan berita acara kondisi awal–akhir.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t text-xs font-semibold" style="border-color: var(--info-bd); color: var(--info-fg);">
+            Dampak: Aset menganggur &amp; rawan sengketa saat kembali
+          </div>
+        </article>
+
+        <article class="pk-card p-5 flex flex-col justify-between" style="background: var(--err-alert); border-color: var(--err-bd);">
+          <div>
+            <span class="pk-pill pill-err mb-3">Masalah 03</span>
+            <h3 class="text-base font-bold mb-2" style="color: var(--ink);">Gelombang E-Waste Akibat Servis Gelap</h3>
+            <p class="text-sm" style="color: var(--ink-2);">
+              Kipas angin, blender, atau <em>rice cooker</em> rusak ringan sering langsung dibuang karena warga sulit menemukan teknisi terverifikasi dan takut terkena "ketok harga".
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t text-xs font-semibold" style="border-color: var(--err-bd); color: var(--err-fg);">
+            Dampak: Limbah elektronik meningkat &amp; barang terbuang dini
+          </div>
+        </article>
+      </div>
+
+      <!-- Comparison Table -->
+      <div class="pk-card overflow-hidden">
+        <div class="px-5 py-3.5 border-b flex items-center justify-between" style="background: var(--canvas-soft); border-color: var(--hairline);">
+          <h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--ink-mute);">
+            Perbandingan Sistem Konvensional vs Pendekatan Terstruktur PinjamKarya
+          </h3>
+          <span class="text-xs font-semibold" style="color: var(--ok-fg);">5 Perbaikan Kritis</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs sm:text-sm">
+            <thead>
+              <tr style="background: var(--canvas); border-bottom: 1px solid var(--hairline);">
+                <th class="py-3 px-4 font-bold uppercase text-[11px] tracking-wider" style="color: var(--ink-mute);">Aspek</th>
+                <th class="py-3 px-4 font-bold uppercase text-[11px] tracking-wider" style="color: var(--err-fg);">Sistem Konvensional / Grup Chat</th>
+                <th class="py-3 px-4 font-bold uppercase text-[11px] tracking-wider" style="color: var(--ok-fg);">Pendekatan PinjamKarya</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y" style="border-color: var(--hairline);">
+              <tr>
+                <td class="py-3 px-4 font-semibold">Pencarian &amp; Jadwal</td>
+                <td class="py-3 px-4" style="color: var(--ink-mute);">Tanya manual di grup WhatsApp, rawan jadwal bentrok ganda</td>
+                <td class="py-3 px-4 font-medium">Filter katalog &amp; tanggal real-time + penguncian SQL <code>FOR UPDATE</code> + auto-clean <em>Ghost Booking</em></td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 font-semibold">Jaminan Keamanan</td>
+                <td class="py-3 px-4" style="color: var(--ink-mute);">Deposit uang tunai memberatkan warga berpenghasilan rendah</td>
+                <td class="py-3 px-4 font-medium"><strong>Skor Kepercayaan Komunitas</strong> (modal awal 100 poin, reward +10 &amp; penalti terukur)</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 font-semibold">Bukti Kondisi Barang</td>
+                <td class="py-3 px-4" style="color: var(--ink-mute);">Sengketa kerusakan karena tanpa berita acara kondisi awal</td>
+                <td class="py-3 px-4 font-medium">Log <strong>Inspeksi Awal &amp; Akhir</strong> berpasangan 1-baris (<code>Baik</code>, <code>Rusak Ringan</code>, <code>Rusak Berat</code>)</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 font-semibold">Keselamatan Pemakaian</td>
+                <td class="py-3 px-4" style="color: var(--ink-mute);">Peminjam awam tidak tahu SOP alat berdaya tinggi</td>
+                <td class="py-3 px-4 font-medium"><strong>Panduan Keselamatan Kerja (SOP)</strong> per kategori &amp; persetujuan wajib <code>setuju_panduan</code></td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 font-semibold">Transparansi Servis</td>
+                <td class="py-3 px-4" style="color: var(--ink-mute);">Teknisi memperbaiki tanpa kesepakatan harga pasti di awal</td>
+                <td class="py-3 px-4 font-medium"><strong>Alur 6 Tahap</strong>: warga tinjau diagnosis &amp; biaya dulu sebelum klik <em>Setujui</em> atau <em>Tolak Estimasi</em></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         SLIDE 03 — SOLUSI KONSEPTUAL, CLOSED-LOOP & KETERKAITAN SDGS
+         ======================================================================= -->
+    <section id="slide-03" class="showcase-slide" data-slide-index="2">
+      <div class="slide-kicker">
+        <span class="slide-kicker-num">03 / 12</span>
+        <span>Conceptual Solution &amp; SDGs Alignment</span>
+      </div>
+
+      <h2 class="section-title text-2xl sm:text-4xl font-extrabold mb-6">
+        Satu Ekosistem Sirkular, Dua Pilar Layanan, Empat Kontribusi SDGs
+      </h2>
+
+      <!-- 2 Pillars -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div class="pk-card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <span class="pk-pill pill-ok">Pilar 01 • Library of Things</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#14532d" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+          </div>
+          <h3 class="text-lg font-bold mb-2">Perpustakaan Perkakas Komunitas</h3>
+          <p class="text-sm" style="color: var(--ink-mute);">
+            Memfasilitasi warga dan UMKM meminjam perkakas pertukangan, mesin produksi usaha kecil, elektronik, hingga alat bantu kesehatan secara terjadwal tanpa deposit tunai — dijaga oleh <strong>Trust Score</strong>, <strong>SOP Keselamatan</strong>, dan <strong>Inspeksi Fisik Awal–Akhir</strong>.
+          </p>
+        </div>
+
+        <div class="pk-card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <span class="pk-pill pill-teal">Pilar 02 • Right-to-Repair Hub</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0f5257" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          </div>
+          <h3 class="text-lg font-bold mb-2">Pusat Perbaikan Mandiri</h3>
+          <p class="text-sm" style="color: var(--ink-mute);">
+            Mempertemukan pemilik barang rusak dengan <strong>Mitra Teknisi Lokal Terverifikasi</strong> lewat laporan bergambar, klaim antrean anti-bentrok, diagnosis &amp; penawaran biaya transparan yang wajib disetujui warga, hingga pelacakan progres <strong>6 tahap</strong>.
+          </p>
+        </div>
+      </div>
+
+      <!-- Closed-Loop Diagram -->
+      <div class="pk-card-soft p-5 mb-7">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <div class="text-xs font-bold uppercase tracking-wider" style="color: var(--ink);">
+            Siklus Tertutup Otomatis (Closed-Loop Integration)
+          </div>
+          <span class="pk-pill pill-warn text-[11px]">Jembatan Modul 6 → Modul 7 → Modul 8 → Modul 3</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-stretch">
+          <div class="pk-card p-3.5 text-xs">
+            <div class="font-bold mb-1" style="color: var(--err-fg);">1. Inspeksi Akhir Rusak</div>
+            <div style="color: var(--ink-mute);">Unit kembali <code>Rusak Ringan/Berat</code> di <code>inspeksi.php</code>.</div>
+          </div>
+          <div class="pk-card p-3.5 text-xs">
+            <div class="font-bold mb-1" style="color: var(--warn-fg);">2. Kunci Perawatan</div>
+            <div style="color: var(--ink-mute);">Status alat jadi <code>Perawatan</code> &amp; skor peminjam dipotong.</div>
+          </div>
+          <div class="pk-card p-3.5 text-xs">
+            <div class="font-bold mb-1" style="color: var(--info-fg);">3. Auto-Tiket Hub</div>
+            <div style="color: var(--ink-mute);">Sistem terbitkan tiket <code>RTR-...</code> bertautan <code>id_alat_hub</code>.</div>
+          </div>
+          <div class="pk-card p-3.5 text-xs">
+            <div class="font-bold mb-1" style="color: var(--teal-fg);">4. Servis Teknisi</div>
+            <div style="color: var(--ink-mute);">Teknisi terverifikasi klaim, perbaiki, lalu tandai <code>Siap Diambil</code>.</div>
+          </div>
+          <div class="pk-card p-3.5 text-xs" style="background: var(--ok-alert); border-color: var(--ok-bd);">
+            <div class="font-bold mb-1" style="color: var(--ok-fg);">5. Pulih Tersedia</div>
+            <div style="color: var(--ink-2);">Admin tutup tiket → status unit otomatis pulih jadi <code>Tersedia</code>.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SDGs Alignment Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="pk-card p-4" style="border-top: 4px solid #b45309;">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xl font-extrabold tabular-nums" style="color: #b45309;">SDG 12</span>
+            <span class="pk-pill pill-warn text-[10px]">Utama</span>
+          </div>
+          <div class="text-sm font-bold mb-1.5">Konsumsi &amp; Produksi Bertanggung Jawab</div>
+          <p class="text-xs" style="color: var(--ink-mute);">
+            Target 12.5: Menekan timbulan <em>e-waste</em> melalui berbagi pakai &amp; perbaikan barang, terukur lewat <code>rata_rata_berat_kg</code> dan <code>estimasi_harga_baru</code>.
+          </p>
+        </div>
+
+        <div class="pk-card p-4" style="border-top: 4px solid #8c1d18;">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xl font-extrabold tabular-nums" style="color: #8c1d18;">SDG 10</span>
+            <span class="pk-pill pill-err text-[10px]">Utama</span>
+          </div>
+          <div class="text-sm font-bold mb-1.5">Berkurangnya Kesenjangan</div>
+          <p class="text-xs" style="color: var(--ink-mute);">
+            Target 10.2: Membuka akses alat UMKM &amp; alat bantu medis (kursi roda) tanpa syarat uang muka; cukup modal awal <strong>100 poin</strong> gratis saat mendaftar.
+          </p>
+        </div>
+
+        <div class="pk-card p-4" style="border-top: 4px solid #0f5257;">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xl font-extrabold tabular-nums" style="color: #0f5257;">SDG 8</span>
+            <span class="pk-pill pill-teal text-[10px]">Pendukung</span>
+          </div>
+          <div class="text-sm font-bold mb-1.5">Pekerjaan Layak &amp; Ekonomi</div>
+          <p class="text-xs" style="color: var(--ink-mute);">
+            Mendorong usaha mikro lewat akses mesin produksi hemat biaya sekaligus memberi kanal kerja terverifikasi bagi teknisi lokal independen.
+          </p>
+        </div>
+
+        <div class="pk-card p-4" style="border-top: 4px solid #1e40af;">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xl font-extrabold tabular-nums" style="color: #1e40af;">SDG 11</span>
+            <span class="pk-pill pill-info text-[10px]">Pendukung</span>
+          </div>
+          <div class="text-sm font-bold mb-1.5">Kota &amp; Pemukiman Berkelanjutan</div>
+          <p class="text-xs" style="color: var(--ink-mute);">
+            Mengorganisasi Hub Komunitas tingkat kelurahan (Purwokerto Utara) sebagai simpul berbagi logistik aman dan pengurangan limbah perkotaan.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         SLIDE 04 — MANFAAT NYATA & NILAI EKONOMI
+         ======================================================================= -->
+    <section id="slide-04" class="showcase-slide" data-slide-index="3">
+      <div class="slide-kicker">
+        <span class="slide-kicker-num">04 / 12</span>
+        <span>Stakeholder Value &amp; Economic Impact</span>
+      </div>
+
+      <h2 class="section-title text-2xl sm:text-4xl font-extrabold mb-6">
+        Manfaat Nyata di Setiap Sisi Ekosistem Komunitas
+      </h2>
+
+      <!-- 4 Role Value Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-7">
+        <div class="pk-card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <span class="pk-pill pill-ok">Warga &amp; Pelaku UMKM</span>
+            <span class="text-xs font-bold tabular-nums" style="color: var(--ok-fg);">Hemat hingga 90%+</span>
+          </div>
+          <p class="text-sm mb-3" style="color: var(--ink-2);">
+            Menghemat ratusan ribu hingga jutaan rupiah dibanding membeli alat baru (<code>harga_beli_baru - biaya_perawatan</code>), jadwal pasti tanpa bentrok, serta kepastian biaya servis sebelum barang diperbaiki.
+          </p>
+          <div class="text-xs font-medium" style="color: var(--ink-mute);">Akses: Katalog, Reservasi Atomik, Pelacakan 6 Tahap</div>
+        </div>
+
+        <div class="pk-card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <span class="pk-pill pill-teal">Mitra Kontributor Aset</span>
+            <span class="text-xs font-bold" style="color: var(--teal-fg);">Kontrol Penuh Aset</span>
+          </div>
+          <p class="text-sm mb-3" style="color: var(--ink-2);">
+            Menyalurkan nilai guna perkakas menganggur agar produktif bagi tetangga/UMKM dengan pengaturan ambang <code>min_skor</code> oleh pemilik dan transparansi log inspeksi fisik Awal–Akhir per unit.
+          </p>
+          <div class="text-xs font-medium" style="color: var(--ink-mute);">Akses: Penitipan Aset, Riwayat Sewa &amp; Log Inspeksi Miliknya</div>
+        </div>
+
+        <div class="pk-card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <span class="pk-pill pill-teal">Mitra Teknisi Lokal</span>
+            <span class="text-xs font-bold" style="color: var(--teal-fg);">0% Komisi Platform</span>
+          </div>
+          <p class="text-sm mb-3" style="color: var(--ink-2);">
+            Memperoleh antrean pekerjaan servis terverifikasi tanpa sewa kios komersial, lengkap dengan foto kerusakan, keluhan awal, pilihan lokasi cek (<em>Diantar ke Hub</em> / <em>Kunjungan Teknisi</em>), dan rekap nilai jasa.
+          </p>
+          <div class="text-xs font-medium" style="color: var(--ink-mute);">Akses: Antrean Terbuka, Klaim Diagnosis &amp; Pekerjaan Saya</div>
+        </div>
+
+        <div class="pk-card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <span class="pk-pill pill-info">Admin Pengelola Hub</span>
+            <span class="text-xs font-bold" style="color: var(--info-fg);">Audit &amp; Kendali Mutu</span>
+          </div>
+          <p class="text-sm mb-3" style="color: var(--ink-2);">
+            Mengendalikan kurasi alat mitra, verifikasi teknisi, kepatuhan SOP keselamatan, audit komparasi kondisi fisik 1-baris, serta pendataan real-time dampak pengurangan limbah komunitas.
+          </p>
+          <div class="text-xs font-medium" style="color: var(--ink-mute);">Akses: Bento Dashboard, Inspeksi, Kurasi Aset &amp; Kelola Tiket</div>
+        </div>
+      </div>
+
+      <!-- Live Community Impact Strip (from index.php) -->
+      <div class="rounded-2xl p-6" style="background: var(--charcoal); color: var(--on-dark);">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-5">
+          <div>
+            <div class="text-[11px] font-bold uppercase tracking-widest" style="color: var(--on-dark-mute);">Ringkasan Dampak Komunitas (Kalkulasi SQL Live — index.php &amp; dashboard.php)</div>
+            <div class="text-lg font-bold">Transparansi Metrik Tanpa Angka Statis (Hardcode)</div>
+          </div>
+          <span class="text-xs px-3 py-1 rounded-full" style="background: #2e2d2a; color: #9ec8ae;">Aggregasi SUM() &amp; COUNT()</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="p-4 rounded-xl border" style="background: #272624; border-color: #3a3935;">
+            <div class="text-xs mb-1" style="color: var(--on-dark-mute);">Inventaris Aktif Katalog</div>
+            <div class="text-3xl font-extrabold tabular-nums mb-1" style="color: #9ec8ae;">20 Unit</div>
+            <div class="text-[11px]" style="color: var(--on-dark-mute);">4 Kategori: Pertukangan, UMKM, Kesehatan, Elektronik</div>
+          </div>
+          <div class="p-4 rounded-xl border" style="background: #272624; border-color: #3a3935;">
+            <div class="text-xs mb-1" style="color: var(--on-dark-mute);">Rumus Penghematan Pinjam</div>
+            <div class="text-lg font-bold tabular-nums mb-1" style="color: #f3f2ee;">&Sigma;(Harga Baru &minus; Biaya Rawat)</div>
+            <div class="text-[11px]" style="color: var(--on-dark-mute);">Dihitung dari peminjaman berstatus <code>Selesai</code></div>
+          </div>
+          <div class="p-4 rounded-xl border" style="background: #272624; border-color: #3a3935;">
+            <div class="text-xs mb-1" style="color: var(--on-dark-mute);">Rumus Penghematan &amp; E-Waste Servis</div>
+            <div class="text-lg font-bold tabular-nums mb-1" style="color: #f3f2ee;">&Sigma;(Est. Baru &minus; Servis) &amp; Kg</div>
+            <div class="text-[11px]" style="color: var(--on-dark-mute);">Dihitung dari tiket <code>Selesai</code> &times; <code>rata_rata_berat_kg</code></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         SLIDE 05 — RISET PENGGUNA & USER PERSONA (STANDAR BEHANCE)
+         ======================================================================= -->
+    <section id="slide-05" class="showcase-slide" data-slide-index="4">
+      <div class="slide-kicker">
+        <span class="slide-kicker-num">05 / 12</span>
+        <span>User Research &amp; Personas • Berbasis Seed Data Aktual</span>
+      </div>
+
+      <h2 class="section-title text-2xl sm:text-4xl font-extrabold mb-6">
+        Merancang Solusi untuk Lima Realitas Pengguna Komunitas
+      </h2>
+
+      <!-- 4 Main Personas -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <!-- Persona 1: Fadhol -->
+        <article class="pk-card p-5">
+          <div class="flex items-start justify-between gap-3 mb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-full flex items-center justify-center font-extrabold text-sm" style="background: var(--ok-bg); color: var(--ok-fg); border: 1px solid var(--ok-bd);">FD</div>
+              <div>
+                <h3 class="font-bold text-base">Fadhol <span class="text-xs font-normal" style="color: var(--ink-mute);">• 29 thn</span></h3>
+                <div class="text-xs" style="color: var(--ink-mute);">Warga Aktif &amp; Pelaku UMKM Kuliner</div>
+              </div>
+            </div>
+            <span class="pk-pill pill-ok tabular-nums">Skor 110+</span>
+          </div>
+          <div class="space-y-2 text-xs">
+            <p><strong style="color: var(--ink);">Core Needs:</strong> Kepastian jadwal kosong pada tanggal tertentu, panduan keselamatan jelas, dan kendali setujui/tolak biaya servis.</p>
+            <p><strong style="color: var(--err-fg);">Frustrations:</strong> Alat yang diincar tiba-tiba bentrok saat hari H; bingung memperbaiki atau membuang barang dapur rusak.</p>
+            <div class="p-2.5 rounded-lg" style="background: var(--ok-alert); color: var(--ok-fg);">
+              <strong>Solusi PinjamKarya:</strong> Filter tanggal katalog, reservasi atomik <code>FOR UPDATE</code>, &amp; pelacak servis 6 tahap.
+            </div>
+          </div>
+        </article>
+
+        <!-- Persona 2: Siti Aminah -->
+        <article class="pk-card p-5">
+          <div class="flex items-start justify-between gap-3 mb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-full flex items-center justify-center font-extrabold text-sm" style="background: var(--err-bg); color: var(--err-fg); border: 1px solid var(--err-bd);">SA</div>
+              <div>
+                <h3 class="font-bold text-base">Siti Aminah <span class="text-xs font-normal" style="color: var(--ink-mute);">• 37 thn</span></h3>
+                <div class="text-xs" style="color: var(--ink-mute);">Ibu Rumah Tangga • Skor Terbatas</div>
+              </div>
+            </div>
+            <span class="pk-pill pill-err tabular-nums">Skor 65</span>
+          </div>
+          <div class="space-y-2 text-xs">
+            <p><strong style="color: var(--ink);">Core Needs:</strong> Mengetahui batas <code>min_skor</code> sebelum memesan, tahu aturan pasti menaikkan skor, dan tetap bisa servis barang rusak.</p>
+            <p><strong style="color: var(--err-fg);">Frustrations:</strong> Ditolak tiba-tiba tanpa penjelasan selisih poin atau riwayat alasan penalti inspeksi sebelumnya.</p>
+            <div class="p-2.5 rounded-lg" style="background: var(--warn-alert); color: var(--warn-fg);">
+              <strong>Solusi PinjamKarya:</strong> Meter akses katalog, rincian aturan <code>+10 / -5 / -15</code> di Profil, &amp; akses penuh <code>buat_tiket.php</code>.
+            </div>
+          </div>
+        </article>
+
+        <!-- Persona 3: Balqis -->
+        <article class="pk-card p-5">
+          <div class="flex items-start justify-between gap-3 mb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-full flex items-center justify-center font-extrabold text-sm" style="background: var(--teal-bg); color: var(--teal-fg); border: 1px solid var(--teal-bd);">BQ</div>
+              <div>
+                <h3 class="font-bold text-base">Balqis <span class="text-xs font-normal" style="color: var(--ink-mute);">• 34 thn</span></h3>
+                <div class="text-xs" style="color: var(--ink-mute);">Pemilik Bengkel • Mitra Ganda</div>
+              </div>
+            </div>
+            <span class="pk-pill pill-teal">Mitra &amp; Teknisi</span>
+          </div>
+          <div class="space-y-2 text-xs">
+            <p><strong style="color: var(--ink);">Core Needs:</strong> Menitipkan perkakas aman tanpa hilang kendali kondisi fisik; antrean servis dengan gejala &amp; foto yang jelas.</p>
+            <p><strong style="color: var(--err-fg);">Frustrations:</strong> Takut alat titipan dipakai ceroboh; repot jika warga batal sepihak setelah komponen terlanjur dibeli.</p>
+            <div class="p-2.5 rounded-lg" style="background: var(--teal-bg); color: var(--teal-fg);">
+              <strong>Solusi PinjamKarya:</strong> Setting <code>min_skor</code> oleh pemilik, akses <code>riwayat_inspeksi.php</code> unitnya, &amp; kunci <code>persetujuan_warga = 1</code>.
+            </div>
+          </div>
+        </article>
+
+        <!-- Persona 4: Aflah -->
+        <article class="pk-card p-5">
+          <div class="flex items-start justify-between gap-3 mb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-full flex items-center justify-center font-extrabold text-sm" style="background: var(--info-bg); color: var(--info-fg); border: 1px solid var(--info-bd);">AF</div>
+              <div>
+                <h3 class="font-bold text-base">Aflah <span class="text-xs font-normal" style="color: var(--ink-mute);">• 23 thn</span></h3>
+                <div class="text-xs" style="color: var(--ink-mute);">Koordinator Hub Purwokerto Utara</div>
+              </div>
+            </div>
+            <span class="pk-pill pill-info">Admin Hub</span>
+          </div>
+          <div class="space-y-2 text-xs">
+            <p><strong style="color: var(--ink);">Core Needs:</strong> Melihat item mendesak hari ini dalam sekali pandang, membandingkan inspeksi Awal vs Akhir cepat, dan bebas salah klik fatal.</p>
+            <p><strong style="color: var(--err-fg);">Frustrations:</strong> Log inspeksi terpencar di banyak baris; repot membuat tiket servis manual saat alat Hub kembali rusak.</p>
+            <div class="p-2.5 rounded-lg" style="background: var(--info-alert); color: var(--info-fg);">
+              <strong>Solusi PinjamKarya:</strong> Bento <code>urgent_count</code>, komparasi 1-baris, auto-tiket kerusakan, &amp; popup konfirmasi <code>#pkConfirmModal</code>.
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <!-- Mini Highlight Persona 5: Budi Santoso (Pending) -->
+      <div class="pk-card-soft p-4 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs" style="background: var(--warn-bg); color: var(--warn-fg); border: 1px solid var(--warn-bd);">BS</div>
+          <div class="text-xs sm:text-sm">
+            <strong>Persona 5 — Budi Santoso (26 thn • Teknisi Baru):</strong>
+            <span style="color: var(--ink-mute);"> Status <code>is_teknisi = 1</code>, <code>is_verified_teknisi = 0</code>. Dilindungi guard backend &amp; tampilan panduan <em>Menunggu Verifikasi Admin Hub</em> dengan badge <code>Pending</code> agar tidak kebingungan saat belum bisa mengklaim tiket.</span>
+          </div>
+        </div>
+        <span class="pk-pill pill-warn">Pending Guard</span>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         SLIDE 06 — ARSITEKTUR SISTEM, 6 TABEL RELASIONAL & USER FLOW
+         ======================================================================= -->
+    <section id="slide-06" class="showcase-slide" data-slide-index="5">
+      <div class="slide-kicker">
+        <span class="slide-kicker-num">06 / 12</span>
+        <span>System Architecture, Database Schema &amp; End-to-End Flows</span>
+      </div>
+
+      <h2 class="section-title text-2xl sm:text-4xl font-extrabold mb-2">
+        Skema Relasional 6 Tabel InnoDB &amp; Alur Lintas Peran
+      </h2>
+      <p class="text-sm mb-6" style="color: var(--ink-mute);">
+        Seluruh kueri memakai <code>mysqli</code> Prepared Statements, penguncian atomik <code>FOR UPDATE</code>, serta integritas Foreign Key (<code>RESTRICT</code>, <code>CASCADE</code>, <code>SET NULL</code>).
+      </p>
+
+      <!-- 6 Relational Tables Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 mb-7">
+        <div class="pk-card p-4">
+          <div class="flex items-center justify-between mb-2">
+            <code class="text-xs font-bold px-2 py-0.5 rounded" style="background: var(--info-bg); color: var(--info-fg);">1. users</code>
+            <span class="text-[11px]" style="color: var(--ink-mute);">PK: id_user</span>
+          </div>
+          <p class="text-xs" style="color: var(--ink-mute);">
+            Autentikasi bcrypt &amp; OAuth, <code>role</code> (admin/mitra/warga), sub-peran <code>is_kontributor</code>, <code>is_teknisi</code>, <code>is_verified_teknisi</code>, &amp; <code>skor_kredibilitas</code> (default 100).
+          </p>
+        </div>
+
+        <div class="pk-card p-4">
+          <div class="flex items-center justify-between mb-2">
+            <code class="text-xs font-bold px-2 py-0.5 rounded" style="background: var(--ok-bg); color: var(--ok-fg);">2. kategori_alat</code>
+            <span class="text-[11px]" style="color: var(--ink-mute);">PK: id_kategori</span>
+          </div>
+          <p class="text-xs" style="color: var(--ink-mute);">
+            Master kategori, teks <code>panduan_keselamatan</code> (SOP wajib), serta parameter dampak SDGs: <code>rata_rata_berat_kg</code> &amp; <code>estimasi_harga_baru</code>.
+          </p>
+        </div>
+
+        <div class="pk-card p-4">
+          <div class="flex items-center justify-between mb-2">
+            <code class="text-xs font-bold px-2 py-0.5 rounded" style="background: var(--teal-bg); color: var(--teal-fg);">3. aset_alat</code>
+            <span class="text-[11px]" style="color: var(--ink-mute);">FK: kategori, pemilik</span>
+          </div>
+          <p class="text-xs" style="color: var(--ink-mute);">
+            Inventaris Hub &amp; titipan Mitra, <code>harga_beli_baru</code>, <code>biaya_perawatan</code>, <code>max_hari_pinjam</code>, <code>min_skor</code>, &amp; status 4 tahap (<code>Menunggu Verifikasi</code> s/d <code>Perawatan</code>).
+          </p>
+        </div>
+
+        <div class="pk-card p-4">
+          <div class="flex items-center justify-between mb-2">
+            <code class="text-xs font-bold px-2 py-0.5 rounded" style="background: var(--warn-bg); color: var(--warn-fg);">4. peminjaman</code>
+            <span class="text-[11px]" style="color: var(--ink-mute);">FK: alat, warga</span>
+          </div>
+          <p class="text-xs" style="color: var(--ink-mute);">
+            Reservasi <code>PK-YYYYMMDD-NNN</code>, rentang <code>tgl_mulai</code>–<code>tgl_selesai</code>, <code>setuju_panduan</code>, dikunci <code>FOR UPDATE</code>, status <code>Dipesan</code> → <code>Selesai</code> / <code>Dibatalkan</code>.
+          </p>
+        </div>
+
+        <div class="pk-card p-4">
+          <div class="flex items-center justify-between mb-2">
+            <code class="text-xs font-bold px-2 py-0.5 rounded" style="background: var(--err-bg); color: var(--err-fg);">5. inspeksi_alat</code>
+            <span class="text-[11px]" style="color: var(--ink-mute);">FK: peminjaman, petugas</span>
+          </div>
+          <p class="text-xs" style="color: var(--ink-mute);">
+            Berita acara <code>Awal</code> &amp; <code>Akhir</code>, kondisi fisik (<code>Baik</code>, <code>Rusak Ringan</code>, <code>Rusak Berat</code>), catatan kelengkapan, pemicu kalkulasi skor &amp; auto-tiket.
+          </p>
+        </div>
+
+        <div class="pk-card p-4">
+          <div class="flex items-center justify-between mb-2">
+            <code class="text-xs font-bold px-2 py-0.5 rounded" style="background: var(--canvas-soft); color: var(--ink);">6. tiket_perbaikan</code>
+            <span class="text-[11px]" style="color: var(--ink-mute);">FK: pelapor, teknisi, id_alat_hub</span>
+          </div>
+          <p class="text-xs" style="color: var(--ink-mute);">
+            Tiket <code>RTR-YYYYMMDD-NNN</code>, <code>metode_cek</code>, diagnosis, estimasi biaya/hari, kunci <code>persetujuan_warga</code>, tautan opsional <code>id_alat_hub</code>, &amp; status 6 tahap.
+          </p>
+        </div>
+      </div>
+
+      <!-- Interactive End-to-End Flow Tabs -->
+      <div class="pk-card-soft p-5">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div class="text-xs font-bold uppercase tracking-wider" style="color: var(--ink-mute);">
+            Diagram Interaktif Alur Pengguna (Klik Tab Peran)
+          </div>
+          <div class="flex flex-wrap gap-2" role="tablist">
+            <button type="button" class="flow-tab-btn is-active" data-flow-tab="warga-pinjam">Warga (Pinjam)</button>
+            <button type="button" class="flow-tab-btn" data-flow-tab="warga-servis">Warga (Servis 6 Tahap)</button>
+            <button type="button" class="flow-tab-btn" data-flow-tab="mitra">Mitra (Kontributor &amp; Teknisi)</button>
+            <button type="button" class="flow-tab-btn" data-flow-tab="admin">Admin Hub</button>
+          </div>
+        </div>
+
+        <!-- Flow Panels -->
+        <div id="flow-warga-pinjam" class="flow-panel grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <div class="pk-card p-3.5 text-xs"><div class="font-bold mb-1">1. Filter Katalog</div><div style="color: var(--ink-mute);">Cek kategori &amp; rentang tanggal (Ghost Booking otomatis bersih).</div></div>
+          <div class="pk-card p-3.5 text-xs"><div class="font-bold mb-1">2. Cek Skor &amp; SOP</div><div style="color: var(--ink-mute);">Validasi <code>skor &ge; min_skor</code> &amp; baca Panduan Keselamatan.</div></div>
+          <div class="pk-card p-3.5 text-xs"><div class="font-bold mb-1">3. Reservasi Atomik</div><div style="color: var(--ink-mute);">Kunci <code>FOR UPDATE</code> anti-bentrok → terbit kode <code>PK-...</code>.</div></div>
+          <div class="pk-card p-3.5 text-xs"><div class="font-bold mb-1">4. Serah &amp; Kembali</div><div style="color: var(--ink-mute);">Admin catat Inspeksi Awal (<code>Dipinjam</code>) &amp; Akhir (<code>Selesai</code>).</div></div>
+          <div class="pk-card p-3.5 text-xs" style="background: var(--ok-alert); border-color: var(--ok-bd);"><div class="font-bold mb-1" style="color: var(--ok-fg);">5. Update Skor</div><div style="color: var(--ink-2);">Tepat waktu &amp; baik dapat <strong>+10 poin</strong>; log tampil di Profil.</div></div>
+        </div>
+
+        <div id="flow-warga-servis" class="flow-panel hidden grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2.5">
+          <div class="pk-card p-3 text-xs"><div class="font-bold mb-1">1. Lapor</div><div style="color: var(--ink-mute);">Isi gejala, metode cek &amp; foto → <code>Menunggu Diagnosis</code>.</div></div>
+          <div class="pk-card p-3 text-xs"><div class="font-bold mb-1">2. Klaim Teknisi</div><div style="color: var(--ink-mute);">Teknisi terverifikasi kirim diagnosis &amp; estimasi biaya.</div></div>
+          <div class="pk-card p-3 text-xs" style="background: var(--warn-alert); border-color: var(--warn-bd);"><div class="font-bold mb-1" style="color: var(--warn-fg);">3. Keputusan Biaya</div><div style="color: var(--ink-2);">Warga klik <strong>Setujui</strong> atau <strong>Tolak</strong> (reset antrean).</div></div>
+          <div class="pk-card p-3 text-xs"><div class="font-bold mb-1">4. Dikerjakan</div><div style="color: var(--ink-mute);">Teknisi memperbaiki setelah <code>persetujuan_warga = 1</code>.</div></div>
+          <div class="pk-card p-3 text-xs"><div class="font-bold mb-1">5. Siap Diambil</div><div style="color: var(--ink-mute);">Teknisi tandai selesai servis via popup konfirmasi.</div></div>
+          <div class="pk-card p-3 text-xs" style="background: var(--ok-alert); border-color: var(--ok-bd);"><div class="font-bold mb-1" style="color: var(--ok-fg);">6. Selesai</div><div style="color: var(--ink-2);">Warga konfirmasi terima → dampak SDGs &amp; hemat bertambah.</div></div>
+        </div>
+
+        <div id="flow-mitra" class="flow-panel hidden grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="pk-card p-3.5 text-xs"><div class="font-bold mb-1" style="color: var(--teal-fg);">A. Daftar Sub-Role</div><div style="color: var(--ink-mute);">Pilih <code>is_kontributor</code>, <code>is_teknisi</code>, atau keduanya.</div></div>
+          <div class="pk-card p-3.5 text-xs"><div class="font-bold mb-1" style="color: var(--teal-fg);">B. Titip Perkakas</div><div style="color: var(--ink-mute);">Ajukan unit di <code>aset_mitra.php</code> → status <code>Menunggu Verifikasi</code>.</div></div>
+          <div class="pk-card p-3.5 text-xs"><div class="font-bold mb-1" style="color: var(--teal-fg);">C. Pantau Inspeksi</div><div style="color: var(--ink-mute);">Akses eksklusif <code>riwayat_inspeksi.php</code> khusus unit miliknya.</div></div>
+          <div class="pk-card p-3.5 text-xs"><div class="font-bold mb-1" style="color: var(--teal-fg);">D. Meja Teknisi</div><div style="color: var(--ink-mute);">Setelah <code>is_verified_teknisi = 1</code>, klaim tiket &amp; update progres.</div></div>
+        </div>
+
+        <div id="flow-admin" class="flow-panel hidden grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <div class="pk-card p-3.5 text-xs"><div class="font-bold mb-1" style="color: var(--info-fg);">1. Pantau Urgent</div><div style="color: var(--ink-mute);">Cek KPI mendesak: alat mitra, teknisi pending, booking aktif.</div></div>
+          <div class="pk-card p-3.5 text-xs"><div class="font-bold mb-1" style="color: var(--info-fg);">2. Kurasi &amp; Master</div><div style="color: var(--ink-mute);">Verifikasi teknisi &amp; alat mitra, kelola kategori &amp; SOP.</div></div>
+          <div class="pk-card p-3.5 text-xs"><div class="font-bold mb-1" style="color: var(--info-fg);">3. Inspeksi Fisik</div><div style="color: var(--ink-mute);">Catat Awal/Akhir &amp; audit komparasi 1-baris di riwayat.</div></div>
+          <div class="pk-card p-3.5 text-xs"><div class="font-bold mb-1" style="color: var(--info-fg);">4. Setujui Servis Hub</div><div style="color: var(--ink-mute);">Persetujuan estimasi auto-tiket aset Hub di <code>kelola_tiket.php</code>.</div></div>
+          <div class="pk-card p-3.5 text-xs" style="background: var(--ok-alert); border-color: var(--ok-bd);"><div class="font-bold mb-1" style="color: var(--ok-fg);">5. Pulihkan Aset</div><div style="color: var(--ink-2);">Tutup tiket Hub → inventaris otomatis kembali <code>Tersedia</code>.</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         SLIDE 07 — DESIGN SYSTEM & STYLE GUIDE
+         ======================================================================= -->
+    <section id="slide-07" class="showcase-slide" data-slide-index="6">
+      <div class="slide-kicker">
+        <span class="slide-kicker-num">07 / 12</span>
+        <span>Design System &amp; Visual Language • 4.246 Baris Vanilla CSS3</span>
+      </div>
+
+      <h2 class="section-title text-2xl sm:text-4xl font-extrabold mb-2">
+        Warm Editorial Minimalism + Psikologi Warna Semantik
+      </h2>
+      <p class="text-sm mb-6" style="color: var(--ink-mute);">
+        Permukaan hangat tanpa hitam murni (<code>#000</code>) menghilangkan silau pada tabel padat data, dipadukan kontras status WCAG AA/AAA dan variable font lokal tanpa request CDN.
+      </p>
+
+      <!-- Color Swatches -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-6">
+        <div class="lg:col-span-5 pk-card p-5">
+          <div class="text-xs font-bold uppercase tracking-wider mb-3" style="color: var(--ink-mute);">Fondasi Monokrom Hangat</div>
+          <div class="grid grid-cols-5 gap-2">
+            <div class="text-center">
+              <div class="h-14 rounded-xl border mb-1.5" style="background: #f3f2ee; border-color: var(--hairline-strong);"></div>
+              <div class="text-[11px] font-bold">Canvas</div>
+              <div class="text-[10px] tabular-nums" style="color: var(--ink-mute);">#f3f2ee</div>
+            </div>
+            <div class="text-center">
+              <div class="h-14 rounded-xl border mb-1.5" style="background: #ebe9e4; border-color: var(--hairline-strong);"></div>
+              <div class="text-[11px] font-bold">Soft</div>
+              <div class="text-[10px] tabular-nums" style="color: var(--ink-mute);">#ebe9e4</div>
+            </div>
+            <div class="text-center">
+              <div class="h-14 rounded-xl border mb-1.5" style="background: #fbfaf8; border-color: var(--hairline-strong);"></div>
+              <div class="text-[11px] font-bold">Surface</div>
+              <div class="text-[10px] tabular-nums" style="color: var(--ink-mute);">#fbfaf8</div>
+            </div>
+            <div class="text-center">
+              <div class="h-14 rounded-xl mb-1.5" style="background: #1f1f1d;"></div>
+              <div class="text-[11px] font-bold">Charcoal</div>
+              <div class="text-[10px] tabular-nums" style="color: var(--ink-mute);">#1f1f1d</div>
+            </div>
+            <div class="text-center">
+              <div class="h-14 rounded-xl mb-1.5" style="background: #5c5a55;"></div>
+              <div class="text-[11px] font-bold">Muted</div>
+              <div class="text-[10px] tabular-nums" style="color: var(--ink-mute);">#5c5a55</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-7 pk-card p-5">
+          <div class="text-xs font-bold uppercase tracking-wider mb-3" style="color: var(--ink-mute);">5 Keluarga Warna Semantik WCAG</div>
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+            <div class="p-2.5 rounded-xl border" style="background: var(--ok-bg); border-color: var(--ok-bd);">
+              <div class="w-6 h-6 rounded-full mb-2" style="background: var(--ok-fg);"></div>
+              <div class="text-xs font-bold" style="color: var(--ok-fg);">Sukses</div>
+              <div class="text-[10px] tabular-nums" style="color: var(--ok-fg);">#14532d</div>
+            </div>
+            <div class="p-2.5 rounded-xl border" style="background: var(--warn-bg); border-color: var(--warn-bd);">
+              <div class="w-6 h-6 rounded-full mb-2" style="background: var(--warn-fg);"></div>
+              <div class="text-xs font-bold" style="color: var(--warn-fg);">Peringatan</div>
+              <div class="text-[10px] tabular-nums" style="color: var(--warn-fg);">#784208</div>
+            </div>
+            <div class="p-2.5 rounded-xl border" style="background: var(--err-bg); border-color: var(--err-bd);">
+              <div class="w-6 h-6 rounded-full mb-2" style="background: var(--err-fg);"></div>
+              <div class="text-xs font-bold" style="color: var(--err-fg);">Bahaya</div>
+              <div class="text-[10px] tabular-nums" style="color: var(--err-fg);">#8c1d18</div>
+            </div>
+            <div class="p-2.5 rounded-xl border" style="background: var(--info-bg); border-color: var(--info-bd);">
+              <div class="w-6 h-6 rounded-full mb-2" style="background: var(--info-fg);"></div>
+              <div class="text-xs font-bold" style="color: var(--info-fg);">Info/Admin</div>
+              <div class="text-[10px] tabular-nums" style="color: var(--info-fg);">#1e40af</div>
+            </div>
+            <div class="p-2.5 rounded-xl border" style="background: var(--teal-bg); border-color: var(--teal-bd);">
+              <div class="w-6 h-6 rounded-full mb-2" style="background: var(--teal-fg);"></div>
+              <div class="text-xs font-bold" style="color: var(--teal-fg);">Teal Mitra</div>
+              <div class="text-[10px] tabular-nums" style="color: var(--teal-fg);">#0f5257</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Typography & Components -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div class="lg:col-span-6 pk-card p-5">
+          <div class="text-xs font-bold uppercase tracking-wider mb-3" style="color: var(--ink-mute);">Spesimen Tipografi — Mufaddhol Sans (AdwaitaSans-Variable)</div>
+          <div class="space-y-2.5">
+            <div class="flex items-baseline justify-between border-b pb-2" style="border-color: var(--hairline);">
+              <span class="text-2xl font-extrabold tracking-tight">Hero Display Aa</span>
+              <span class="text-[11px] tabular-nums" style="color: var(--ink-mute);">Weight 580 • -0.055em</span>
+            </div>
+            <div class="flex items-baseline justify-between border-b pb-2" style="border-color: var(--hairline);">
+              <span class="text-lg font-bold tracking-tight">Page Title H1</span>
+              <span class="text-[11px] tabular-nums" style="color: var(--ink-mute);">1.5–2rem • -0.035em</span>
+            </div>
+            <div class="flex items-baseline justify-between border-b pb-2" style="border-color: var(--hairline);">
+              <span class="text-lg font-bold tabular-nums">Rp 1.450.000</span>
+              <span class="text-[11px]" style="color: var(--ink-mute);">KPI • tabular-nums</span>
+            </div>
+            <div class="flex items-baseline justify-between">
+              <span class="text-[11px] font-semibold uppercase tracking-widest" style="color: var(--ink-mute);">TABLE HEADER COLUMN</span>
+              <span class="text-[11px] tabular-nums" style="color: var(--ink-mute);">11px • +0.05em</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-6 pk-card p-5">
+          <div class="text-xs font-bold uppercase tracking-wider mb-3" style="color: var(--ink-mute);">Komponen Status, Role Badge &amp; Hierarki Radius</div>
+          <div class="flex flex-wrap gap-2 mb-4">
+            <span class="pk-pill pill-ok">Tersedia</span>
+            <span class="pk-pill pill-info">Dipinjam</span>
+            <span class="pk-pill pill-warn">Perawatan</span>
+            <span class="pk-pill pill-err">Menunggu Verifikasi</span>
+            <span class="pk-pill pill-dark">Tidak Tersedia</span>
+          </div>
+          <div class="flex flex-wrap gap-2 mb-4">
+            <span class="pk-pill pill-info">Admin</span>
+            <span class="pk-pill pill-teal">Mitra &amp; Teknisi</span>
+            <span class="pk-pill pill-ok">Warga</span>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 text-[11px]" style="color: var(--ink-mute);">
+            <span class="px-2.5 py-1 border" style="border-radius: 6px; border-color: var(--hairline-strong);">6px xs</span>
+            <span class="px-2.5 py-1 border" style="border-radius: 10px; border-color: var(--hairline-strong);">10px sm</span>
+            <span class="px-2.5 py-1 border" style="border-radius: 14px; border-color: var(--hairline-strong);">14px md</span>
+            <span class="px-2.5 py-1 border" style="border-radius: 18px; border-color: var(--hairline-strong);">18px lg</span>
+            <span class="px-3 py-1 border" style="border-radius: 999px; background: var(--charcoal); color: var(--on-dark);">999px pill</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         SLIDE 08 — HIGHLIGHT MODUL UNGGULAN 1 (MODUL 1–5)
+         ======================================================================= -->
+    <section id="slide-08" class="showcase-slide" data-slide-index="7">
+      <div class="slide-kicker">
+        <span class="slide-kicker-num">08 / 12</span>
+        <span>Core Features Highlight • Modul 1 hingga Modul 5</span>
+      </div>
+
+      <h2 class="section-title text-2xl sm:text-4xl font-extrabold mb-6">
+        Fondasi Akses, Katalog Pintar &amp; Mesin Reservasi Anti-Bentrok
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="pk-card p-5">
+          <span class="pk-pill pill-info mb-3">Modul 01</span>
+          <h3 class="text-base font-bold mb-2">Autentikasi, Multi-Role, Google OAuth 2.0 &amp; Trust Score</h3>
+          <p class="text-xs leading-relaxed" style="color: var(--ink-mute);">
+            Registrasi langsung <em>auto-login</em> ke dashboard, integrasi <strong>Google OAuth 2.0 murni PHP cURL</strong> (tanpa SDK + CSRF state), <em>Lazy Contact Completion</em> saat transaksi, dan modal awal <strong>100 poin</strong>.
+          </p>
+        </div>
+
+        <div class="pk-card p-5">
+          <span class="pk-pill pill-ok mb-3">Modul 02</span>
+          <h3 class="text-base font-bold mb-2">Master Kategori, SOP Keselamatan &amp; Parameter SDGs</h3>
+          <p class="text-xs leading-relaxed" style="color: var(--ink-mute);">
+            CRUD terproteksi <code>ON DELETE RESTRICT</code> untuk menyimpan <strong>Panduan Keselamatan Kerja</strong> per rumpun alat beserta bobot <code>rata_rata_berat_kg</code> dan <code>estimasi_harga_baru</code> acuan SDGs.
+          </p>
+        </div>
+
+        <div class="pk-card p-5">
+          <span class="pk-pill pill-teal mb-3">Modul 03</span>
+          <h3 class="text-base font-bold mb-2">Inventaris Hub &amp; Penitipan Alat Mitra</h3>
+          <p class="text-xs leading-relaxed" style="color: var(--ink-mute);">
+            Alat titipan Mitra masuk antrean kurasi <code>Menunggu Verifikasi</code>. Dilengkapi validasi unggah gambar <code>2 MB</code> (<code>getimagesize</code>) serta baris tabel foto fading <strong>12-stop CSS mask</strong>.
+          </p>
+        </div>
+
+        <div class="pk-card p-5 lg:col-span-1">
+          <span class="pk-pill pill-warn mb-3">Modul 04</span>
+          <h3 class="text-base font-bold mb-2">Katalog Masonry &amp; Auto-Clean Ghost Booking</h3>
+          <p class="text-xs leading-relaxed" style="color: var(--ink-mute);">
+            Pemesanan lewat tanggal (<code>tgl_mulai &lt; CURDATE()</code>) dibatalkan otomatis agar unit tak tersandera. Kartu non-tersedia tampil semi-transparan (<code>grayscale 75%</code>, <code>opacity 44%</code>).
+          </p>
+        </div>
+
+        <div class="pk-card p-5 md:col-span-2" style="background: var(--ok-alert); border-color: var(--ok-bd);">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <span class="pk-pill pill-ok">Modul 05 • Mesin Reservasi Atomik (5 Lapisan Validasi)</span>
+            <code class="text-[11px] font-bold" style="color: var(--ok-fg);">SELECT ... FOR UPDATE</code>
+          </div>
+          <h3 class="text-base font-bold mb-2">Gerbang Skor Kepercayaan &amp; Anti-Double Booking</h3>
+          <p class="text-xs leading-relaxed mb-3" style="color: var(--ink-2);">
+            Menolak unit yang sedang dirawat atau skor warga di bawah <code>min_skor</code>, memvalidasi durasi hari real-time &amp; centang SOP, mengunci baris aset dalam transaksi SQL atomik, serta menyarankan <strong>tanggal kosong terdekat</strong> otomatis apabila jadwal bertabrakan.
+          </p>
+          <div class="flex flex-wrap gap-2 text-[11px] font-semibold" style="color: var(--ok-fg);">
+            <span>✓ Kode PK-YYYYMMDD-NNN</span>
+            <span>•</span>
+            <span>✓ Kalkulator Durasi JS Real-Time</span>
+            <span>•</span>
+            <span>✓ Batal No-Show oleh Admin</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         SLIDE 09 — HIGHLIGHT MODUL UNGGULAN 2 (MODUL 6–9)
+         ======================================================================= -->
+    <section id="slide-09" class="showcase-slide" data-slide-index="8">
+      <div class="slide-kicker">
+        <span class="slide-kicker-num">09 / 12</span>
+        <span>Core Features Highlight • Modul 6 hingga Modul 9</span>
+      </div>
+
+      <h2 class="section-title text-2xl sm:text-4xl font-extrabold mb-6">
+        Audit Fisik 1-Baris, Right-to-Repair 6 Tahap &amp; Bento Workspace
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="pk-card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <span class="pk-pill pill-err">Modul 06</span>
+            <span class="text-xs font-bold tabular-nums" style="color: var(--ink-mute);">+10 / -5 / -15 Poin</span>
+          </div>
+          <h3 class="text-base font-bold mb-2">Inspeksi Awal–Akhir, Penalti Skor &amp; Auto-Tiket</h3>
+          <p class="text-xs leading-relaxed mb-3" style="color: var(--ink-mute);">
+            Satu-satunya jalur transisi <code>Dipesan → Dipinjam → Selesai</code>. Pengembalian tepat waktu &amp; baik menambah <strong>+10 poin</strong>; terlambat mengurangi <strong>5 poin/hari</strong>; rusak mengurangi <strong>15 poin</strong> sekaligus menerbitkan <strong>Auto-Tiket Inspeksi</strong> (<code>RTR-...</code>).
+          </p>
+          <div class="text-xs font-semibold" style="color: var(--warn-fg);">
+            Komparasi 1 Booking = 1 Baris (Awal → Akhir) + isolasi akses untuk Mitra pemilik alat.
+          </div>
+        </div>
+
+        <div class="pk-card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <span class="pk-pill pill-teal">Modul 07</span>
+            <span class="text-xs font-bold" style="color: var(--teal-fg);">Right-to-Repair Intake</span>
+          </div>
+          <h3 class="text-base font-bold mb-2">Meja Pengajuan Tiket Perbaikan Mandiri</h3>
+          <p class="text-xs leading-relaxed mb-3" style="color: var(--ink-mute);">
+            Warga melaporkan kerusakan barang rumah tangga/UMKM lengkap dengan kategori (menampilkan acuan Kg <em>e-waste</em>), pilihan <strong>Diantar ke Hub</strong> atau <strong>Kunjungan Teknisi</strong>, dan foto kerusakan.
+          </p>
+          <div class="text-xs font-semibold" style="color: var(--teal-fg);">
+            Tetap terbuka penuh bagi warga meskipun skor peminjaman sedang terbatas.
+          </div>
+        </div>
+
+        <div class="pk-card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <span class="pk-pill pill-warn">Modul 08</span>
+            <span class="text-xs font-bold" style="color: var(--warn-fg);">No Hidden Cost</span>
+          </div>
+          <h3 class="text-base font-bold mb-2">Diagnosis Teknisi &amp; Pelacakan 6 Tahap</h3>
+          <p class="text-xs leading-relaxed mb-3" style="color: var(--ink-mute);">
+            Klaim antrean kondisional mencegah klaim ganda. Warga berhak menekan <strong>Setujui Biaya</strong> atau <strong>Tolak Estimasi</strong> (mereset teknisi ke antrean terbuka). Penutupan tiket aset Hub otomatis memulihkan unit ke <code>Tersedia</code>.
+          </p>
+          <div class="text-xs font-semibold" style="color: var(--ok-fg);">
+            Visualisasi live lewat komponen 6-step stepper (<code>.pk-stepper</code>).
+          </div>
+        </div>
+
+        <div class="pk-card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <span class="pk-pill pill-info">Modul 09</span>
+            <span class="text-xs font-bold" style="color: var(--info-fg);">5 Varian Bento</span>
+          </div>
+          <h3 class="text-base font-bold mb-2">Bento Dashboard Multi-Role &amp; Popup Konfirmasi UI</h3>
+          <p class="text-xs leading-relaxed mb-3" style="color: var(--ink-mute);">
+            Menyajikan 4 KPI semantik, <strong>Grafik Batang SVG 6 Bulan murni</strong> (tanpa Chart.js), bar distribusi, dan antrean aktivitas sesuai peran (Admin, Mitra 3 varian, Warga).
+          </p>
+          <div class="text-xs font-semibold" style="color: var(--info-fg);">
+            Seluruh aksi sensitif diproteksi dialog deklaratif <code>#pkConfirmModal</code> (<code>data-confirm</code>).
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         SLIDE 10 — SCREEN WALKTHROUGH (6 MOCKUP UI REALISTIS + UPLOAD ASLI)
+         ======================================================================= -->
+    <section id="slide-10" class="showcase-slide" data-slide-index="9">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
+        <div class="slide-kicker !mb-0">
+          <span class="slide-kicker-num">10 / 12</span>
+          <span>Screen Walkthrough • Tangkapan Antarmuka Aplikasi</span>
+        </div>
+        <button id="btnDemoModal" type="button" class="no-print pk-pill pill-warn cursor-pointer">
+          Uji Preview #pkConfirmModal
+        </button>
+      </div>
+
+      <h2 class="section-title text-2xl sm:text-4xl font-extrabold mb-2">
+        Pratinjau 6 Layar Kunci Ekosistem PinjamKarya
+      </h2>
+      <p class="text-sm mb-6" style="color: var(--ink-mute);">
+        Direkonstruksi presisi sesuai token UI aktual. Aktifkan tombol <strong>Edit Tim &amp; Screenshot</strong> di toolbar atas bila ingin mengganti frame mana pun dengan screenshot asli <code>1440&times;900</code> Anda.
+      </p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+        <!-- Screen 1: Landing Page -->
+        <div class="browser-frame flex flex-col">
+          <div class="browser-bar">
+            <div class="browser-dots"><span></span><span></span><span></span></div>
+            <div class="browser-url">/index.php</div>
+            <label class="upload-trigger text-[10px] font-bold px-2 py-0.5 rounded-full cursor-pointer" style="background: var(--info-bg); color: var(--info-fg);">
+              Ganti Foto <input type="file" accept="image/*" class="hidden screen-uploader" data-target="screen-slot-1" />
+            </label>
+          </div>
+          <div id="screen-slot-1" class="p-3.5 flex-1 flex flex-col justify-between gap-3" style="background: var(--canvas);">
+            <div class="p-3 rounded-xl border" style="background: var(--surface); border-color: var(--hairline);">
+              <div class="text-[10px] font-bold mb-1" style="color: var(--ok-fg);">Landing Page Publik</div>
+              <div class="text-sm font-extrabold leading-tight mb-2">Berbagi Perkakas &amp; Servis Komunitas</div>
+              <div class="grid grid-cols-2 gap-2">
+                <div class="p-2 rounded-lg text-[10px] font-semibold" style="background: var(--charcoal); color: var(--on-dark);">Pinjam Perkakas</div>
+                <div class="p-2 rounded-lg text-[10px] font-semibold border" style="background: var(--canvas-soft); border-color: var(--hairline-strong);">Perbaiki Barang</div>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-1.5 text-center">
+              <div class="p-1.5 rounded-lg border" style="background: var(--surface); border-color: var(--hairline);"><div class="text-xs font-bold tabular-nums">20</div><div class="text-[9px]" style="color: var(--ink-mute);">Alat Siap</div></div>
+              <div class="p-1.5 rounded-lg border" style="background: var(--surface); border-color: var(--hairline);"><div class="text-xs font-bold tabular-nums">4</div><div class="text-[9px]" style="color: var(--ink-mute);">Diperbaiki</div></div>
+              <div class="p-1.5 rounded-lg border" style="background: var(--surface); border-color: var(--hairline);"><div class="text-xs font-bold tabular-nums">1,09Jt</div><div class="text-[9px]" style="color: var(--ink-mute);">Hemat Rp</div></div>
+            </div>
+          </div>
+          <div class="px-3.5 py-2 border-t text-xs font-semibold" style="background: var(--surface); border-color: var(--hairline);">1. Landing Page &amp; Dampak Live</div>
+        </div>
+
+        <!-- Screen 2: Katalog Masonry -->
+        <div class="browser-frame flex flex-col">
+          <div class="browser-bar">
+            <div class="browser-dots"><span></span><span></span><span></span></div>
+            <div class="browser-url">/katalog/index.php</div>
+            <label class="upload-trigger text-[10px] font-bold px-2 py-0.5 rounded-full cursor-pointer" style="background: var(--info-bg); color: var(--info-fg);">
+              Ganti Foto <input type="file" accept="image/*" class="hidden screen-uploader" data-target="screen-slot-2" />
+            </label>
+          </div>
+          <div id="screen-slot-2" class="p-3.5 flex-1 grid grid-cols-2 gap-2.5" style="background: var(--canvas);">
+            <div class="p-2.5 rounded-xl border flex flex-col justify-between" style="background: var(--surface); border-color: var(--hairline);">
+              <div class="h-14 rounded-lg mb-2 flex items-center justify-center text-[10px] font-bold" style="background: var(--ok-bg); color: var(--ok-fg);">Bor Bosch 550W</div>
+              <div>
+                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style="background: var(--ok-bg); color: var(--ok-fg);">Tersedia</span>
+                <div class="text-[11px] font-bold mt-1">Min Skor 80</div>
+              </div>
+            </div>
+            <div class="p-2.5 rounded-xl border flex flex-col justify-between mock-unavailable" style="background: var(--surface); border-color: var(--hairline);">
+              <div class="h-14 rounded-lg mb-2 flex items-center justify-center text-[10px] font-bold" style="background: var(--canvas-soft); color: var(--ink-mute);">Hand Mixer 500W</div>
+              <div>
+                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style="background: var(--charcoal); color: var(--on-dark);">Tidak Tersedia</span>
+                <div class="text-[10px] mt-1" style="color: var(--ink-mute);">Dipinjam / Rawat</div>
+              </div>
+            </div>
+          </div>
+          <div class="px-3.5 py-2 border-t text-xs font-semibold" style="background: var(--surface); border-color: var(--hairline);">2. Katalog Masonry &amp; Kartu Transparan</div>
+        </div>
+
+        <!-- Screen 3: Bento Dashboard Admin -->
+        <div class="browser-frame flex flex-col">
+          <div class="browser-bar">
+            <div class="browser-dots"><span></span><span></span><span></span></div>
+            <div class="browser-url">/dashboard.php (Admin)</div>
+            <label class="upload-trigger text-[10px] font-bold px-2 py-0.5 rounded-full cursor-pointer" style="background: var(--info-bg); color: var(--info-fg);">
+              Ganti Foto <input type="file" accept="image/*" class="hidden screen-uploader" data-target="screen-slot-3" />
+            </label>
+          </div>
+          <div id="screen-slot-3" class="p-3.5 flex-1 flex flex-col justify-between gap-2.5" style="background: var(--canvas);">
+            <div class="grid grid-cols-4 gap-1.5">
+              <div class="p-1.5 rounded-lg border" style="background: var(--err-alert); border-color: var(--err-bd);"><div class="text-[9px]" style="color: var(--err-fg);">Urgent</div><div class="text-xs font-bold tabular-nums">3</div></div>
+              <div class="p-1.5 rounded-lg border" style="background: var(--ok-alert); border-color: var(--ok-bd);"><div class="text-[9px]" style="color: var(--ok-fg);">Siap</div><div class="text-xs font-bold tabular-nums">18</div></div>
+              <div class="p-1.5 rounded-lg border" style="background: var(--info-alert); border-color: var(--info-bd);"><div class="text-[9px]" style="color: var(--info-fg);">Tiket</div><div class="text-xs font-bold tabular-nums">2</div></div>
+              <div class="p-1.5 rounded-lg border" style="background: var(--warn-alert); border-color: var(--warn-bd);"><div class="text-[9px]" style="color: var(--warn-fg);">Hemat</div><div class="text-xs font-bold tabular-nums">1,1Jt</div></div>
+            </div>
+            <!-- Native SVG 6-Month Bar Chart -->
+            <div class="p-2.5 rounded-xl border" style="background: var(--surface); border-color: var(--hairline);">
+              <div class="flex justify-between text-[9px] font-semibold mb-1.5" style="color: var(--ink-mute);">
+                <span>Tren 6 Bulan (SVG Lokal)</span>
+                <span><span style="color: #1e40af;">■ Pinjam</span> <span style="color: #b45309;">■ Servis</span></span>
+              </div>
+              <svg viewBox="0 0 180 48" class="w-full h-11">
+                <rect x="8" y="28" width="9" height="16" rx="2" fill="#1e40af"/><rect x="19" y="34" width="9" height="10" rx="2" fill="#b45309"/>
+                <rect x="38" y="22" width="9" height="22" rx="2" fill="#1e40af"/><rect x="49" y="30" width="9" height="14" rx="2" fill="#b45309"/>
+                <rect x="68" y="16" width="9" height="28" rx="2" fill="#1e40af"/><rect x="79" y="26" width="9" height="18" rx="2" fill="#b45309"/>
+                <rect x="98" y="20" width="9" height="24" rx="2" fill="#1e40af"/><rect x="109" y="24" width="9" height="20" rx="2" fill="#b45309"/>
+                <rect x="128" y="10" width="9" height="34" rx="2" fill="#1e40af"/><rect x="139" y="18" width="9" height="26" rx="2" fill="#b45309"/>
+                <rect x="158" y="6" width="9" height="38" rx="2" fill="#1e40af"/><rect x="169" y="14" width="9" height="30" rx="2" fill="#b45309"/>
+              </svg>
+            </div>
+          </div>
+          <div class="px-3.5 py-2 border-t text-xs font-semibold" style="background: var(--surface); border-color: var(--hairline);">3. Bento Dashboard &amp; Grafik SVG</div>
+        </div>
+
+        <!-- Screen 4: Trust Score Gate -->
+        <div class="browser-frame flex flex-col">
+          <div class="browser-bar">
+            <div class="browser-dots"><span></span><span></span><span></span></div>
+            <div class="browser-url">/reservasi/reservasi.php</div>
+            <label class="upload-trigger text-[10px] font-bold px-2 py-0.5 rounded-full cursor-pointer" style="background: var(--info-bg); color: var(--info-fg);">
+              Ganti Foto <input type="file" accept="image/*" class="hidden screen-uploader" data-target="screen-slot-4" />
+            </label>
+          </div>
+          <div id="screen-slot-4" class="p-3.5 flex-1 flex flex-col justify-between gap-2.5" style="background: var(--canvas);">
+            <div class="p-2.5 rounded-xl border" style="background: var(--err-alert); border-color: var(--err-bd);">
+              <div class="text-[10px] font-bold mb-1" style="color: var(--err-fg);">Skor Kepercayaan Belum Mencukupi</div>
+              <div class="text-[11px]" style="color: var(--ink-2);">Skor Siti: <strong>65</strong> &lt; Syarat Alat: <strong>80</strong> (Kurang 15 poin).</div>
+            </div>
+            <div class="p-2.5 rounded-xl border space-y-1.5" style="background: var(--surface); border-color: var(--hairline);">
+              <div class="flex justify-between text-[10px]"><span>Durasi: 3 Hari (Maks 3)</span><span style="color: var(--ok-fg); font-weight: 700;">SOP Wajib ✓</span></div>
+              <div class="w-full py-1.5 rounded-full text-center text-[10px] font-bold" style="background: var(--canvas-soft); color: var(--ink-mute);">Tombol Ajukan Terkunci (Disabled)</div>
+            </div>
+          </div>
+          <div class="px-3.5 py-2 border-t text-xs font-semibold" style="background: var(--surface); border-color: var(--hairline);">4. Trust Score Gate &amp; Validasi SOP</div>
+        </div>
+
+        <!-- Screen 5: Komparasi Inspeksi 1-Baris -->
+        <div class="browser-frame flex flex-col">
+          <div class="browser-bar">
+            <div class="browser-dots"><span></span><span></span><span></span></div>
+            <div class="browser-url">/admin/riwayat_inspeksi.php</div>
+            <label class="upload-trigger text-[10px] font-bold px-2 py-0.5 rounded-full cursor-pointer" style="background: var(--info-bg); color: var(--info-fg);">
+              Ganti Foto <input type="file" accept="image/*" class="hidden screen-uploader" data-target="screen-slot-5" />
+            </label>
+          </div>
+          <div id="screen-slot-5" class="p-3.5 flex-1 flex flex-col justify-center gap-2" style="background: var(--canvas);">
+            <div class="text-[10px] font-bold tabular-nums" style="color: var(--ink-mute);">PK-20261121-003 • Bor Listrik Bosch</div>
+            <div class="grid grid-cols-11 items-center gap-1.5">
+              <div class="col-span-5 p-2 rounded-lg border" style="background: var(--surface); border-color: var(--hairline);">
+                <div class="text-[9px] uppercase font-bold" style="color: var(--ink-mute);">Awal (Serah)</div>
+                <span class="inline-block mt-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold" style="background: var(--ok-bg); color: var(--ok-fg);">Baik</span>
+              </div>
+              <div class="col-span-1 text-center font-bold text-xs" style="color: var(--warn-fg);">&rarr;</div>
+              <div class="col-span-5 p-2 rounded-lg border" style="background: var(--warn-alert); border-color: var(--warn-bd);">
+                <div class="text-[9px] uppercase font-bold" style="color: var(--warn-fg);">Akhir (Kembali)</div>
+                <span class="inline-block mt-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold" style="background: var(--warn-bg); color: var(--warn-fg);">Rusak Ringan</span>
+              </div>
+            </div>
+            <div class="text-[10px] font-semibold px-2 py-1 rounded-lg" style="background: var(--info-alert); color: var(--info-fg);">
+              Auto-Tiket RTR-20261123-004 diterbitkan
+            </div>
+          </div>
+          <div class="px-3.5 py-2 border-t text-xs font-semibold" style="background: var(--surface); border-color: var(--hairline);">5. Komparasi Inspeksi 1-Baris</div>
+        </div>
+
+        <!-- Screen 6: Pelacakan Right-to-Repair 6 Tahap -->
+        <div class="browser-frame flex flex-col">
+          <div class="browser-bar">
+            <div class="browser-dots"><span></span><span></span><span></span></div>
+            <div class="browser-url">/perbaikan/tiket_saya.php</div>
+            <label class="upload-trigger text-[10px] font-bold px-2 py-0.5 rounded-full cursor-pointer" style="background: var(--info-bg); color: var(--info-fg);">
+              Ganti Foto <input type="file" accept="image/*" class="hidden screen-uploader" data-target="screen-slot-6" />
+            </label>
+          </div>
+          <div id="screen-slot-6" class="p-3.5 flex-1 flex flex-col justify-between gap-2.5" style="background: var(--canvas);">
+            <div class="pk-stepper-mini text-center">
+              <div class="p-1 rounded text-[8px] font-bold" style="background: var(--ok-bg); color: var(--ok-fg);">1.Lapor</div>
+              <div class="p-1 rounded text-[8px] font-bold" style="background: var(--ok-bg); color: var(--ok-fg);">2.Diag</div>
+              <div class="p-1 rounded text-[8px] font-bold border" style="background: var(--warn-bg); color: var(--warn-fg); border-color: var(--warn-bd);">3.Setuju</div>
+              <div class="p-1 rounded text-[8px]" style="background: var(--canvas-soft); color: var(--ink-mute);">4.Kerja</div>
+              <div class="p-1 rounded text-[8px]" style="background: var(--canvas-soft); color: var(--ink-mute);">5.Siap</div>
+              <div class="p-1 rounded text-[8px]" style="background: var(--canvas-soft); color: var(--ink-mute);">6.Tuntas</div>
+            </div>
+            <div class="p-2.5 rounded-xl border" style="background: var(--warn-alert); border-color: var(--warn-bd);">
+              <div class="text-[10px] font-bold" style="color: var(--warn-fg);">Estimasi: Rp 65.000 • 2 Hari</div>
+              <div class="flex gap-1.5 mt-2">
+                <span class="flex-1 text-center py-1 rounded-full text-[9px] font-bold" style="background: var(--charcoal); color: var(--on-dark);">Setujui Biaya</span>
+                <span class="flex-1 text-center py-1 rounded-full text-[9px] font-bold border" style="background: var(--surface); color: var(--err-fg); border-color: var(--err-bd);">Tolak</span>
+              </div>
+            </div>
+          </div>
+          <div class="px-3.5 py-2 border-t text-xs font-semibold" style="background: var(--surface); border-color: var(--hairline);">6. Stepper 6 Tahap &amp; Persetujuan Biaya</div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         SLIDE 11 — PROFIL TIM PENGEMBANG (3 ANGGOTA)
+         ======================================================================= -->
+    <section id="slide-11" class="showcase-slide" data-slide-index="10">
+      <div class="slide-kicker">
+        <span class="slide-kicker-num">11 / 12</span>
+        <span>Development Team • Jurusan Informatika UNSOED</span>
+      </div>
+
+      <h2 class="section-title text-2xl sm:text-4xl font-extrabold mb-2">
+        Di Balik Pengembangan PinjamKarya
+      </h2>
+      <p class="text-sm mb-6" style="color: var(--ink-mute);">
+        Dibangun secara kolaboratif oleh 3 mahasiswa Informatika dengan pembagian cakupan arsitektur, layanan mitra, serta pengalaman warga &amp; sistem desain.
+      </p>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <!-- Member 1: Aflah -->
+        <article class="pk-card p-6 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-extrabold" style="background: var(--info-bg); color: var(--info-fg); border: 1px solid var(--info-bd);">AF</div>
+              <span class="pk-pill pill-info">Admin Hub</span>
+            </div>
+            <h3 class="text-xl font-extrabold mb-1" data-editable>Aflah</h3>
+            <div class="text-xs font-bold mb-3" style="color: var(--info-fg);">Pengelola Hub &amp; Arsitektur Sistem</div>
+            <p class="text-xs leading-relaxed mb-4" style="color: var(--ink-mute);">
+              Merancang skema database relasional 6 tabel InnoDB, arsitektur keamanan terpusat (<code>.htaccess</code> &amp; <code>config/</code>), autentikasi &amp; kontrol role, serta modul manajemen user, kategori, aset, transaksi, dan inspeksi fisik Awal–Akhir (<code>auth/</code>, <code>admin/</code>).
+            </p>
+          </div>
+          <div class="pt-3 border-t space-y-1 text-xs" style="border-color: var(--hairline); color: var(--ink-2);">
+            <div><strong>NIM:</strong> <span data-editable>H1D024XXX (Klik Edit untuk isi)</span></div>
+            <div><strong>GitHub / LinkedIn:</strong> <span data-editable>github.com/aflah</span></div>
+          </div>
+        </article>
+
+        <!-- Member 2: Balqis -->
+        <article class="pk-card p-6 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-extrabold" style="background: var(--teal-bg); color: var(--teal-fg); border: 1px solid var(--teal-bd);">BQ</div>
+              <span class="pk-pill pill-teal">Mitra &amp; Servis</span>
+            </div>
+            <h3 class="text-xl font-extrabold mb-1" data-editable>Balqis</h3>
+            <div class="text-xs font-bold mb-3" style="color: var(--teal-fg);">Koordinator Mitra &amp; Layanan Right-to-Repair</div>
+            <p class="text-xs leading-relaxed mb-4" style="color: var(--ink-mute);">
+              Mengembangkan portal penitipan perkakas Mitra Kontributor (<code>mitra/aset_mitra.php</code>), meja kerja klaim &amp; diagnosis teknisi terverifikasi (<code>mitra/antrean_teknisi.php</code>), tiket perbaikan warga 6 tahap (<code>perbaikan/</code>), hingga integrasi pemulihan aset Hub (<code>admin/kelola_tiket.php</code>).
+            </p>
+          </div>
+          <div class="pt-3 border-t space-y-1 text-xs" style="border-color: var(--hairline); color: var(--ink-2);">
+            <div><strong>NIM:</strong> <span data-editable>H1D024XXX (Klik Edit untuk isi)</span></div>
+            <div><strong>GitHub / LinkedIn:</strong> <span data-editable>github.com/balqis</span></div>
+          </div>
+        </article>
+
+        <!-- Member 3: Fadhol -->
+        <article class="pk-card p-6 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-extrabold" style="background: var(--ok-bg); color: var(--ok-fg); border: 1px solid var(--ok-bd);">FD</div>
+              <span class="pk-pill pill-ok">UI/UX &amp; SDGs</span>
+            </div>
+            <h3 class="text-xl font-extrabold mb-1" data-editable>Fadhol</h3>
+            <div class="text-xs font-bold mb-3" style="color: var(--ok-fg);">Pengalaman Warga, UI/UX &amp; Analitik Dampak SDGs</div>
+            <p class="text-xs leading-relaxed mb-4" style="color: var(--ink-mute);">
+              Merancang Landing Page &amp; katalog masonry responsif (<code>index.php</code>, <code>katalog/</code>), mesin reservasi atomik berpagar <em>Trust Score</em> (<code>reservasi/</code>), Bento Dashboard bergrafik SVG lokal (<code>dashboard.php</code>), serta sistem desain Vanilla CSS/JS (<code>assets/</code>).
+            </p>
+          </div>
+          <div class="pt-3 border-t space-y-1 text-xs" style="border-color: var(--hairline); color: var(--ink-2);">
+            <div><strong>NIM:</strong> <span data-editable>H1D024XXX (Klik Edit untuk isi)</span></div>
+            <div><strong>GitHub / LinkedIn:</strong> <span data-editable>github.com/fadhol</span></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         SLIDE 12 — PENUTUP, RINGKASAN TECH STACK & CALL TO ACTION
+         ======================================================================= -->
+    <section id="slide-12" class="showcase-slide showcase-slide--dark" data-slide-index="11">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <span class="text-xs font-bold uppercase tracking-widest" style="color: var(--on-dark-mute);">
+          12 / 12 • Penutup &amp; Ringkasan Teknologi
+        </span>
+        <span class="text-xs font-semibold px-3 py-1 rounded-full border" style="border-color: #3d3c38; color: #9ec8ae;">
+          100% Native Web Stack
+        </span>
+      </div>
+
+      <div class="max-w-4xl mb-8">
+        <h2 class="display-title text-3xl sm:text-5xl font-extrabold mb-4" style="color: var(--on-dark);">
+          Dibangun Ringan, Transparan, dan Siap Diterapkan di Komunitas Nyata.
+        </h2>
+        <p class="text-sm sm:text-base leading-relaxed" style="color: var(--on-dark-mute);">
+          PinjamKarya membuktikan bahwa arsitektur <strong style="color: var(--on-dark);">100% Native Web Stack</strong> tanpa framework berat mampu menghadirkan aplikasi multi-peran yang aman (<em>Prepared Statements</em>, penguncian SQL <code>FOR UPDATE</code>, sanitasi XSS), responsif di desktop maupun ponsel, dan berdampak langsung pada penghematan warga serta pengurangan limbah elektronik.
+        </p>
+      </div>
+
+      <!-- Zero-Framework Tech Stack Pills -->
+      <div class="flex flex-wrap gap-2.5 mb-8">
+        <span class="px-3.5 py-1.5 rounded-full text-xs font-semibold border" style="background: #2b2a27; border-color: #3f3e3a; color: var(--on-dark);">PHP 8.2 Native (Prosedural Modular)</span>
+        <span class="px-3.5 py-1.5 rounded-full text-xs font-semibold border" style="background: #2b2a27; border-color: #3f3e3a; color: var(--on-dark);">MySQL / MariaDB InnoDB (6 Tabel)</span>
+        <span class="px-3.5 py-1.5 rounded-full text-xs font-semibold border" style="background: #2b2a27; border-color: #3f3e3a; color: var(--on-dark);">Vanilla CSS3 (4.246 Baris)</span>
+        <span class="px-3.5 py-1.5 rounded-full text-xs font-semibold border" style="background: #2b2a27; border-color: #3f3e3a; color: var(--on-dark);">Vanilla JS ES6+ (386 Baris)</span>
+        <span class="px-3.5 py-1.5 rounded-full text-xs font-semibold border" style="background: #2b2a27; border-color: #3f3e3a; color: var(--on-dark);">Google OAuth 2.0 (PHP cURL)</span>
+        <span class="px-3.5 py-1.5 rounded-full text-xs font-semibold border" style="background: #2b2a27; border-color: #3f3e3a; color: var(--on-dark);">Inline SVG Charts</span>
+        <span class="px-3.5 py-1.5 rounded-full text-xs font-semibold border" style="background: #14532d; border-color: #2f6f46; color: #e8f3ec;">Zero CDN / Zero Library</span>
+      </div>
+
+      <!-- Tagline & Footer Credit -->
+      <div class="pt-6 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-4" style="border-color: #353431;">
+        <div>
+          <div class="text-base sm:text-lg font-bold mb-1" style="color: var(--on-dark);">
+            Pinjam Perkakas. Perbaiki Barang. Bangun Kepercayaan Komunitas.
+          </div>
+          <div class="text-xs" style="color: var(--on-dark-mute);">
+            Tim PinjamKarya (Aflah, Balqis, Fadhol) — Jurusan Informatika, Fakultas Teknik, Universitas Jenderal Soedirman (2026)
+          </div>
+        </div>
+        <div class="text-xs font-semibold" style="color: #9ec8ae;">
+          SDG 12 &amp; SDG 10 • Circular Community Hub
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =========================================================================
+       DECK BOTTOM NAVIGATION (Hanya tampil di Mode Slide Deck)
+       ========================================================================= -->
+  <nav class="deck-nav-bar no-print" aria-label="Navigasi Slide Deck">
+    <button id="btnPrevSlide" type="button" class="px-3 py-1 rounded-full text-xs font-semibold border cursor-pointer transition-colors" style="border-color: #4a4945; color: var(--on-dark);">
+      &larr; Prev
+    </button>
+    <span id="deckCounter" class="text-xs font-bold tabular-nums px-2">01 / 12</span>
+    <button id="btnNextSlide" type="button" class="px-3 py-1 rounded-full text-xs font-semibold cursor-pointer transition-colors" style="background: var(--on-dark); color: var(--charcoal);">
+      Next &rarr;
+    </button>
+  </nav>
+
+  <!-- =========================================================================
+       PREVIEW INTERAKTIF #pkConfirmModal (Simulasi Komponen Asli PinjamKarya)
+       ========================================================================= -->
+  <div id="pkConfirmModal" class="pk-modal-backdrop no-print" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="pk-card w-full max-w-md p-6" style="border-radius: 22px; box-shadow: 0 20px 50px rgba(0,0,0,0.2);">
+      <div class="flex items-start gap-3.5 mb-4">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: var(--warn-bg); color: var(--warn-fg); border: 1px solid var(--warn-bd);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+        </div>
+        <div>
+          <h3 id="confirmTitle" class="text-base font-bold mb-1">Ubah Status ke Perawatan?</h3>
+          <p class="text-xs leading-relaxed" style="color: var(--ink-mute);">
+            Ini adalah simulasi komponen <code>#pkConfirmModal</code> deklaratif (<code>data-confirm</code>) yang menggantikan dialog <code>confirm()</code> bawaan browser di seluruh aplikasi PinjamKarya.
+          </p>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button id="btnCloseConfirm" type="button" class="px-4 py-2 rounded-full text-xs font-semibold border cursor-pointer" style="background: var(--surface); border-color: var(--hairline-strong); color: var(--ink);">
+          Batal
+        </button>
+        <button id="btnApproveConfirm" type="button" class="px-4 py-2 rounded-full text-xs font-semibold cursor-pointer" style="background: var(--warn-fg); color: #fff;">
+          Ya, Set Perawatan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="pkToast" class="pk-toast no-print" role="status" aria-live="polite"></div>
+
+  <!-- =========================================================================
+       VANILLA JAVASCRIPT ES6+ (Kontrol Mode, Keyboard, Tabs, Edit & Upload)
+       ========================================================================= -->
+  <script>
+    (function () {
+      const slides = Array.from(document.querySelectorAll('.showcase-slide'));
+      const totalSlides = slides.length;
+      let currentSlide = 0;
+      let isDeckMode = false;
+      let isEditMode = false;
+
+      const btnModeScroll = document.getElementById('btnModeScroll');
+      const btnModeDeck = document.getElementById('btnModeDeck');
+      const quickJump = document.getElementById('quickJump');
+      const btnPrevSlide = document.getElementById('btnPrevSlide');
+      const btnNextSlide = document.getElementById('btnNextSlide');
+      const deckCounter = document.getElementById('deckCounter');
+      const btnEditToggle = document.getElementById('btnEditToggle');
+      const editBtnLabel = document.getElementById('editBtnLabel');
+      const btnPrintPdf = document.getElementById('btnPrintPdf');
+      const toastEl = document.getElementById('pkToast');
+      let toastTimer = null;
+
+      function showToast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add('is-visible');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toastEl.classList.remove('is-visible'), 2800);
+      }
+
+      function updateDeckView(index) {
+        currentSlide = Math.max(0, Math.min(totalSlides - 1, index));
+        slides.forEach((s, i) => {
+          s.classList.toggle('is-active', i === currentSlide);
+        });
+        const numStr = String(currentSlide + 1).padStart(2, '0');
+        deckCounter.textContent = `${numStr} / ${totalSlides}`;
+        quickJump.value = String(currentSlide);
+        btnPrevSlide.disabled = currentSlide === 0;
+        btnPrevSlide.style.opacity = currentSlide === 0 ? '0.45' : '1';
+        btnNextSlide.disabled = currentSlide === totalSlides - 1;
+        btnNextSlide.style.opacity = currentSlide === totalSlides - 1 ? '0.45' : '1';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      function setMode(deck) {
+        isDeckMode = deck;
+        document.body.classList.toggle('mode-deck', deck);
+        if (deck) {
+          btnModeDeck.style.background = 'var(--charcoal)';
+          btnModeDeck.style.color = 'var(--on-dark)';
+          btnModeScroll.style.background = 'transparent';
+          btnModeScroll.style.color = 'var(--ink-2)';
+          updateDeckView(currentSlide);
+          showToast('Mode Slide Deck aktif — gunakan tombol panah kiri/kanan.');
+        } else {
+          btnModeScroll.style.background = 'var(--charcoal)';
+          btnModeScroll.style.color = 'var(--on-dark)';
+          btnModeDeck.style.background = 'transparent';
+          btnModeDeck.style.color = 'var(--ink-2)';
+          showToast('Mode Behance Long-Scroll aktif.');
+        }
+      }
+
+      btnModeScroll.addEventListener('click', () => setMode(false));
+      btnModeDeck.addEventListener('click', () => setMode(true));
+
+      btnPrevSlide.addEventListener('click', () => updateDeckView(currentSlide - 1));
+      btnNextSlide.addEventListener('click', () => updateDeckView(currentSlide + 1));
+
+      quickJump.addEventListener('change', (e) => {
+        const idx = parseInt(e.target.value, 10);
+        if (isDeckMode) {
+          updateDeckView(idx);
+        } else {
+          currentSlide = idx;
+          const target = slides[idx];
+          if (target) {
+            const top = target.getBoundingClientRect().top + window.scrollY - 88;
+            window.scrollTo({ top, behavior: 'smooth' });
+          }
+        }
+      });
+
+      // Keyboard navigation untuk Mode Slide Deck
+      document.addEventListener('keydown', (e) => {
+        if (!isDeckMode) return;
+        if (document.activeElement && document.activeElement.isContentEditable) return;
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          updateDeckView(currentSlide + 1);
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          updateDeckView(currentSlide - 1);
+        }
+      });
+
+      // Toggle Edit Mode (NIM/GitHub Tim & Upload Screenshot Asli)
+      btnEditToggle.addEventListener('click', () => {
+        isEditMode = !isEditMode;
+        document.body.classList.toggle('edit-mode', isEditMode);
+        document.querySelectorAll('[data-editable]').forEach((el) => {
+          el.contentEditable = isEditMode ? 'true' : 'false';
+        });
+        if (isEditMode) {
+          btnEditToggle.style.background = 'var(--info-bg)';
+          btnEditToggle.style.borderColor = 'var(--info-bd)';
+          btnEditToggle.style.color = 'var(--info-fg)';
+          editBtnLabel.textContent = 'Selesai Edit';
+          showToast('Mode Edit aktif: klik teks NIM/GitHub di Slide 11 atau ganti foto di Slide 10.');
+        } else {
+          btnEditToggle.style.background = 'var(--surface)';
+          btnEditToggle.style.borderColor = 'var(--hairline-strong)';
+          btnEditToggle.style.color = 'var(--ink)';
+          editBtnLabel.textContent = 'Edit Tim & Screenshot';
+          showToast('Perubahan disimpan sementara pada halaman siap cetak PDF.');
+        }
+      });
+
+      // Upload Screenshot Lokal via FileReader untuk Slide 10
+      document.querySelectorAll('.screen-uploader').forEach((input) => {
+        input.addEventListener('change', (e) => {
+          const file = e.target.files && e.target.files[0];
+          if (!file) return;
+          const targetId = input.getAttribute('data-target');
+          const slot = document.getElementById(targetId);
+          if (!slot) return;
+          const reader = new FileReader();
+          reader.onload = function (ev) {
+            slot.innerHTML = `<img src="${ev.target.result}" alt="Screenshot Aplikasi PinjamKarya" class="w-full h-44 object-cover rounded-lg border" style="border-color: var(--hairline);" />`;
+            showToast('Screenshot asli berhasil dipasang ke frame.');
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+
+      // Export PDF
+      btnPrintPdf.addEventListener('click', () => {
+        if (isEditMode) {
+          btnEditToggle.click();
+        }
+        window.print();
+      });
+
+      // Interactive Flow Tabs (Slide 06)
+      const flowTabBtns = document.querySelectorAll('[data-flow-tab]');
+      const flowPanels = document.querySelectorAll('.flow-panel');
+      flowTabBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const key = btn.getAttribute('data-flow-tab');
+          flowTabBtns.forEach((b) => b.classList.toggle('is-active', b === btn));
+          flowPanels.forEach((panel) => {
+            const match = panel.id === `flow-${key}`;
+            panel.classList.toggle('hidden', !match);
+            panel.classList.toggle('grid', match);
+          });
+        });
+      });
+
+      // Demo Confirm Modal (#pkConfirmModal)
+      const modal = document.getElementById('pkConfirmModal');
+      const btnDemoModal = document.getElementById('btnDemoModal');
+      const btnCloseConfirm = document.getElementById('btnCloseConfirm');
+      const btnApproveConfirm = document.getElementById('btnApproveConfirm');
+
+      function closeModal() {
+        modal.classList.remove('is-open');
+      }
+
+      btnDemoModal.addEventListener('click', () => modal.classList.add('is-open'));
+      btnCloseConfirm.addEventListener('click', closeModal);
+      btnApproveConfirm.addEventListener('click', () => {
+        closeModal();
+        showToast('Aksi dikonfirmasi melalui #pkConfirmModal (tanpa confirm() browser).');
+      });
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('is-open')) closeModal();
+      });
+    })();
+  </script>
+</body>
+</html>
