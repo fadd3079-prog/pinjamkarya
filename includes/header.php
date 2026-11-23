@@ -50,15 +50,15 @@ $page_title_full = isset($page_title) && $page_title !== ''
                     <span class="pk-role-tag"><?= e($current_user['role']) ?></span>
                 </a>
 
-                <a href="<?= BASE_URL ?>/modul1/logout.php" class="btn btn-danger" style="min-height:38px; padding:6px 12px;">
+                <a href="<?= BASE_URL ?>/modul1/logout.php" class="btn btn-danger pk-navbar-hide-xs">
                     <?= svg_icon('log-out', 15) ?>
                     <span>Keluar</span>
                 </a>
             <?php else: ?>
-                <a href="<?= BASE_URL ?>/modul1/login.php" class="btn btn-outline" style="min-height:38px; padding:6px 14px;">
+                <a href="<?= BASE_URL ?>/modul1/login.php" class="btn btn-outline">
                     <span>Masuk</span>
                 </a>
-                <a href="<?= BASE_URL ?>/modul1/register.php" class="btn btn-warm" style="min-height:38px; padding:6px 14px;">
+                <a href="<?= BASE_URL ?>/modul1/register.php" class="btn btn-warm pk-navbar-hide-xs">
                     <span>Daftar</span>
                 </a>
             <?php endif; ?>

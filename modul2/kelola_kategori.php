@@ -153,6 +153,11 @@ require_once ROOT_PATH . '/includes/header.php';
                     </tr>
                 </thead>
                 <tbody>
+                    <?php if (mysqli_num_rows($res_list) === 0): ?>
+                        <tr>
+                            <td colspan="3" class="text-center text-muted">Belum ada kategori perkakas. Isi formulir di samping untuk menambahkan kategori pertama.</td>
+                        </tr>
+                    <?php endif; ?>
                     <?php while ($row = mysqli_fetch_assoc($res_list)): ?>
                         <tr>
                             <td>

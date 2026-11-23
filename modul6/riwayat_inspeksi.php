@@ -61,6 +61,12 @@ require_once ROOT_PATH . '/includes/header.php';
         <div class="pk-empty-state">
             <div class="pk-empty-icon"><?= svg_icon('clipboard', 22) ?></div>
             <h3>Belum Ada Catatan Inspeksi</h3>
+            <p class="mb-2">Catatan inspeksi fisik awal dan akhir akan terekam otomatis saat serah-terima perkakas di Hub Komunitas.</p>
+            <?php if ($user['role'] === 'admin'): ?>
+                <a href="<?= BASE_URL ?>/modul5/kelola_transaksi.php" class="btn btn-primary">Buka Transaksi Peminjaman</a>
+            <?php else: ?>
+                <a href="<?= BASE_URL ?>/modul3/aset_mitra.php" class="btn btn-primary">Lihat Alat Titipan Saya</a>
+            <?php endif; ?>
         </div>
     <?php else: ?>
         <div class="table-responsive">

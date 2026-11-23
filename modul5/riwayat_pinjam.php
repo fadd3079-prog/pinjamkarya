@@ -51,8 +51,9 @@ require_once ROOT_PATH . '/includes/header.php';
     <div class="pk-empty-state">
         <div class="pk-empty-icon"><?= svg_icon('calendar', 22) ?></div>
         <h3>Belum Ada Pinjaman</h3>
+        <p class="mb-2">Anda belum pernah melakukan reservasi perkakas. Pilih alat dari katalog dan tentukan tanggal pinjam sesuai kebutuhan Anda.</p>
         <div class="mt-2">
-            <a href="<?= BASE_URL ?>/modul4/katalog.php" class="btn btn-primary">Lihat Katalog</a>
+            <a href="<?= BASE_URL ?>/modul4/katalog.php" class="btn btn-primary">Jelajahi Katalog Perkakas</a>
         </div>
     </div>
 <?php else: ?>

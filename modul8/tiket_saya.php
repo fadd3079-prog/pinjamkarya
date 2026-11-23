@@ -135,8 +135,9 @@ require_once ROOT_PATH . '/includes/header.php';
     <div class="pk-empty-state">
         <div class="pk-empty-icon"><?= svg_icon('wrench', 22) ?></div>
         <h3>Belum Ada Tiket Servis</h3>
+        <p class="mb-2">Anda belum memiliki pengajuan perbaikan barang. Laporkan peralatan rusak Anda untuk mendapatkan diagnosis dan estimasi biaya dari teknisi komunitas.</p>
         <div class="mt-2">
-            <a href="<?= BASE_URL ?>/modul7/buat_tiket.php" class="btn btn-warm">Ajukan Perbaikan</a>
+            <a href="<?= BASE_URL ?>/modul7/buat_tiket.php" class="btn btn-warm">Ajukan Perbaikan Pertama</a>
         </div>
     </div>
 <?php else: ?>
@@ -179,7 +180,7 @@ require_once ROOT_PATH . '/includes/header.php';
 
                 <div>
                     <?php if ($t['status_tiket'] === 'Menunggu Persetujuan'): ?>
-                        <div class="pk-card mb-0">
+                        <div class="pk-card pk-card--warm-soft mb-0">
                             <h3 class="mb-2">Estimasi Teknisi</h3>
                             <div class="mb-2"><?= e($t['diagnosis_teknisi']) ?></div>
                             <div class="d-flex justify-between flex-wrap gap-2 mb-3">

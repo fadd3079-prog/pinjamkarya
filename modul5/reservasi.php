@@ -170,8 +170,8 @@ require_once ROOT_PATH . '/includes/header.php';
             </div>
 
             <div class="form-group">
-                <label class="form-label">Panduan Keselamatan (<?= e($alat['nama_kategori']) ?>)</label>
-                <div class="pk-guideline-box mb-3"><?= e($alat['panduan_keselamatan']) ?></div>
+                <div class="form-label" id="panduan-label">Panduan Keselamatan (<?= e($alat['nama_kategori']) ?>)</div>
+                <div class="pk-guideline-box mb-3" aria-labelledby="panduan-label"><?= e($alat['panduan_keselamatan']) ?></div>
 
                 <div class="form-check">
                     <input type="checkbox" id="setuju_panduan" name="setuju_panduan" value="1" class="form-check-input" required <?= !$skor_cukup ? 'disabled' : '' ?>>

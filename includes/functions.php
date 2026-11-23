@@ -182,8 +182,8 @@ function get_gambar_alat(?string $filename, string $label = 'Perkakas Komunitas'
          . '<circle cx="320" cy="175" r="56" fill="rgba(255,255,255,0.1)"/>'
          . '<path d="M302 152 L338 152 L344 196 L296 196 Z" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linejoin="round"/>'
          . '<path d="M310 152 L310 138 C310 133 330 133 330 138 L330 152" fill="none" stroke="#ffffff" stroke-width="3.5"/>'
-         . '<text x="320" y="280" font-family="Inter, sans-serif" font-size="20" font-weight="600" fill="#ffffff" text-anchor="middle">' . $safe_label . '</text>'
-         . '<text x="320" y="308" font-family="Inter, sans-serif" font-size="14" fill="#cde0e6" text-anchor="middle">PinjamKarya</text>'
+         . '<text x="320" y="280" font-family="Plus Jakarta Sans, sans-serif" font-size="20" font-weight="700" fill="#ffffff" text-anchor="middle">' . $safe_label . '</text>'
+         . '<text x="320" y="308" font-family="Plus Jakarta Sans, sans-serif" font-size="14" fill="#cde0e6" text-anchor="middle">PinjamKarya</text>'
          . '</svg>';
     return 'data:image/svg+xml;utf8,' . rawurlencode($svg);
 }
@@ -201,8 +201,8 @@ function get_gambar_tiket(?string $filename, string $label = 'Barang Perbaikan')
          . '<rect width="640" height="400" fill="#134e5e"/>'
          . '<circle cx="320" cy="175" r="56" fill="rgba(255,255,255,0.1)"/>'
          . '<path d="M302 193 L338 157 M330 150 L345 165 M295 186 L310 201" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>'
-         . '<text x="320" y="280" font-family="Inter, sans-serif" font-size="20" font-weight="600" fill="#ffffff" text-anchor="middle">' . $safe_label . '</text>'
-         . '<text x="320" y="308" font-family="Inter, sans-serif" font-size="14" fill="#cde0e6" text-anchor="middle">PinjamKarya</text>'
+         . '<text x="320" y="280" font-family="Plus Jakarta Sans, sans-serif" font-size="20" font-weight="700" fill="#ffffff" text-anchor="middle">' . $safe_label . '</text>'
+         . '<text x="320" y="308" font-family="Plus Jakarta Sans, sans-serif" font-size="14" fill="#cde0e6" text-anchor="middle">PinjamKarya</text>'
          . '</svg>';
     return 'data:image/svg+xml;utf8,' . rawurlencode($svg);
 }
@@ -296,9 +296,17 @@ function badge_status_tiket(string $status): string {
     return '<span class="pk-badge ' . $cls . '">' . e($status) . '</span>';
 }
 
+/**
+ * Inline 2px stroke SVG icon helper (R-04, R-31).
+ * Purpose: Zero external icon-font request overhead while giving older/non-technical
+ * community members visual cues alongside text labels (wrench = repair, box = inventory,
+ * shield = safety guide, wallet = household savings, leaf = e-waste prevented).
+ */
 function svg_icon(string $name, int $size = 20): string {
     $attr = 'xmlns="http://www.w3.org/2000/svg" width="' . $size . '" height="' . $size . '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"';
     switch ($name) {
+        case 'wallet':
+            return "<svg $attr><path d=\"M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4\"/><path d=\"M4 6v12c0 1.1.9 2 2 2h14v-4\"/><path d=\"M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z\"/></svg>";
         case 'menu':
             return "<svg $attr><line x1=\"3\" y1=\"6\" x2=\"21\" y2=\"6\"/><line x1=\"3\" y1=\"12\" x2=\"21\" y2=\"12\"/><line x1=\"3\" y1=\"18\" x2=\"21\" y2=\"18\"/></svg>";
         case 'x':

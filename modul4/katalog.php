@@ -38,6 +38,11 @@ if ($id_kategori > 0) {
 }
 
 $filter_tanggal_aktif = false;
+if ($tgl_mulai !== '' && $tgl_selesai === '') {
+    $tgl_selesai = $tgl_mulai;
+} elseif ($tgl_selesai !== '' && $tgl_mulai === '') {
+    $tgl_mulai = $tgl_selesai;
+}
 if ($tgl_mulai !== '' && $tgl_selesai !== '') {
     if ($tgl_selesai < $tgl_mulai) {
         $tgl_selesai = $tgl_mulai;
@@ -131,9 +136,10 @@ require_once ROOT_PATH . '/includes/header.php';
 <?php if (mysqli_num_rows($res_alat) === 0): ?>
     <div class="pk-empty-state">
         <div class="pk-empty-icon"><?= svg_icon('box', 22) ?></div>
-        <h3>Tidak Ada Perkakas</h3>
+        <h3>Perkakas Tidak Ditemukan</h3>
+        <p class="mb-2">Belum ada unit perkakas yang cocok dengan kata kunci, kategori, atau rentang tanggal yang Anda pilih.</p>
         <div class="mt-2">
-            <a href="<?= BASE_URL ?>/modul4/katalog.php" class="btn btn-primary">Tampilkan Semua</a>
+            <a href="<?= BASE_URL ?>/modul4/katalog.php" class="btn btn-primary">Reset Filter &amp; Tampilkan Semua</a>
         </div>
     </div>
 <?php else: ?>

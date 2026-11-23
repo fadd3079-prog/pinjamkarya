@@ -207,8 +207,9 @@ require_once ROOT_PATH . '/includes/header.php';
         <div class="pk-empty-state">
             <div class="pk-empty-icon"><?= svg_icon('clipboard', 22) ?></div>
             <h3>Belum Ada Riwayat Inspeksi</h3>
+            <p class="mb-2">Catatan inspeksi akan muncul setelah Anda meminjam perkakas dan petugas Hub melakukan serah-terima fisik alat.</p>
             <div class="mt-2">
-                <a href="<?= BASE_URL ?>/modul4/katalog.php" class="btn btn-primary">Lihat Katalog</a>
+                <a href="<?= BASE_URL ?>/modul4/katalog.php" class="btn btn-primary">Jelajahi Katalog Alat</a>
             </div>
         </div>
     <?php else: ?>

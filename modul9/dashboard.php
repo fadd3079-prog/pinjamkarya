@@ -79,10 +79,10 @@ require_once ROOT_PATH . '/includes/header.php';
 </div>
 
 <section class="pk-grid pk-grid--4 mb-4" aria-label="Indikator Utama">
-    <article class="pk-card mb-0">
+    <article class="pk-card pk-card--primary-soft mb-0">
         <div class="d-flex align-center justify-between mb-1">
             <span class="text-muted">Total Penghematan Warga</span>
-            <?= svg_icon('tag', 18) ?>
+            <?= svg_icon('wallet', 18) ?>
         </div>
         <div class="fs-xl fw-bold text-primary"><?= rupiah($total_penghematan) ?></div>
         <div class="mt-2 text-muted" style="font-size:0.82rem;">
@@ -91,7 +91,7 @@ require_once ROOT_PATH . '/includes/header.php';
         </div>
     </article>
 
-    <article class="pk-card mb-0">
+    <article class="pk-card pk-card--secondary-soft mb-0">
         <div class="d-flex align-center justify-between mb-1">
             <span class="text-muted">E-Waste Dicegah (SDG 12)</span>
             <?= svg_icon('leaf', 18) ?>
@@ -99,7 +99,7 @@ require_once ROOT_PATH . '/includes/header.php';
         <div class="fs-xl fw-bold text-secondary"><?= number_format($total_ewaste_kg, 2, ',', '.') ?> Kg</div>
     </article>
 
-    <article class="pk-card mb-0">
+    <article class="pk-card pk-card--warm-soft mb-0">
         <div class="d-flex align-center justify-between mb-1">
             <span class="text-muted">Barang Diperbaiki</span>
             <?= svg_icon('wrench', 18) ?>
@@ -107,7 +107,7 @@ require_once ROOT_PATH . '/includes/header.php';
         <div class="fs-xl fw-bold text-warm"><?= $total_unit_servis ?> Unit</div>
     </article>
 
-    <article class="pk-card mb-0">
+    <article class="pk-card pk-card--sky-soft mb-0">
         <div class="d-flex align-center justify-between mb-1">
             <span class="text-muted">Peminjaman Tuntas (SDG 10)</span>
             <?= svg_icon('box', 18) ?>
@@ -120,12 +120,13 @@ require_once ROOT_PATH . '/includes/header.php';
     <div class="pk-card-header">
         <h2 id="chart-utilitas-heading" class="pk-card-title">
             <?= svg_icon('bar-chart', 18) ?>
-            <span>Utilitas &amp; Penghematan per Kategori</span>
+            <span>Kategori Mana yang Paling Banyak Menghemat Biaya &amp; Digunakan Warga?</span>
         </h2>
     </div>
 
     <div class="pk-grid pk-grid--2">
         <div>
+            <h3 class="mb-2">Frekuensi Peminjaman &amp; Perbaikan</h3>
             <?php foreach ($kategori_metrics as $km): ?>
                 <?php
                 $pct = (int)round(($km['total_aktivitas'] / $max_aktivitas) * 100);
@@ -135,8 +136,7 @@ require_once ROOT_PATH . '/includes/header.php';
                         <strong><?= e($km['nama_kategori']) ?></strong>
                         <span class="text-muted" style="font-size:0.84rem;">
                             <strong><?= (int)$km['jml_pinjam_selesai'] ?></strong> Pinjam &bull;
-                            <strong><?= (int)$km['jml_servis_selesai'] ?></strong> Servis &bull;
-                            <strong><?= rupiah($km['total_hemat_kat']) ?></strong>
+                            <strong><?= (int)$km['jml_servis_selesai'] ?></strong> Servis
                         </span>
                     </div>
                     <div class="pk-progress" role="progressbar" aria-valuenow="<?= $pct ?>" aria-valuemin="0" aria-valuemax="100" aria-label="Utilitas <?= e($km['nama_kategori']) ?>">
@@ -147,6 +147,7 @@ require_once ROOT_PATH . '/includes/header.php';
         </div>
 
         <div class="pk-card mb-0">
+            <h3 class="mb-2">Kontribusi Penghematan Rupiah per Kategori</h3>
             <?php
             $max_hemat_kat = 1.0;
             foreach ($kategori_metrics as $km) {
@@ -163,12 +164,12 @@ require_once ROOT_PATH . '/includes/header.php';
                     $bar_w = (int)round(($km['total_hemat_kat'] / $max_hemat_kat) * 280);
                     $bar_w = max(8, $bar_w);
                     ?>
-                    <text x="4" y="<?= $y + 14 ?>" font-family="Inter, sans-serif" font-size="13" font-weight="500" fill="#112026">
+                    <text x="4" y="<?= $y + 14 ?>" font-family="Plus Jakarta Sans, sans-serif" font-size="13" font-weight="600" fill="#13262e">
                         <?= e($km['nama_kategori']) ?>
                     </text>
-                    <rect x="4" y="<?= $y + 22 ?>" width="280" height="12" rx="6" fill="#eef2f4" />
+                    <rect x="4" y="<?= $y + 22 ?>" width="280" height="12" rx="6" fill="#ebf1f3" />
                     <rect x="4" y="<?= $y + 22 ?>" width="<?= $bar_w ?>" height="12" rx="6" fill="#0e5a6d" />
-                    <text x="296" y="<?= $y + 33 ?>" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#0e5a6d">
+                    <text x="296" y="<?= $y + 33 ?>" font-family="Plus Jakarta Sans, sans-serif" font-size="13" font-weight="700" fill="#0e5a6d">
                         <?= e(rupiah($km['total_hemat_kat'])) ?>
                     </text>
                 <?php endforeach; ?>

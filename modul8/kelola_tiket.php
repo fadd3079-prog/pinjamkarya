@@ -84,6 +84,11 @@ require_once ROOT_PATH . '/includes/header.php';
                 </tr>
             </thead>
             <tbody>
+                <?php if (mysqli_num_rows($res_all) === 0): ?>
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">Belum ada tiket perbaikan yang diajukan warga maupun otomatis dari inspeksi Hub.</td>
+                    </tr>
+                <?php endif; ?>
                 <?php while ($row = mysqli_fetch_assoc($res_all)): ?>
                     <tr>
                         <td>

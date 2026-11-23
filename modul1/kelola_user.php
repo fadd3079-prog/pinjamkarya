@@ -62,6 +62,11 @@ require_once ROOT_PATH . '/includes/header.php';
                 </tr>
             </thead>
             <tbody>
+                <?php if (mysqli_num_rows($res_users) === 0): ?>
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">Belum ada akun pengguna terdaftar. Arahkan warga atau mitra untuk melakukan registrasi akun.</td>
+                    </tr>
+                <?php endif; ?>
                 <?php while ($u = mysqli_fetch_assoc($res_users)): ?>
                     <tr>
                         <td>#<?= (int)$u['id_user'] ?></td>

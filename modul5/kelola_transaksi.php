@@ -73,7 +73,12 @@ require_once ROOT_PATH . '/includes/header.php';
             <tbody>
                 <?php if (mysqli_num_rows($res_trx) === 0): ?>
                     <tr>
-                        <td colspan="6" class="text-center text-muted">Tidak ada transaksi pada filter ini.</td>
+                        <td colspan="6" class="text-center text-muted">
+                            Belum ada transaksi peminjaman pada status ini.
+                            <?php if ($filter_status !== ''): ?>
+                                <a href="<?= BASE_URL ?>/modul5/kelola_transaksi.php">Tampilkan semua transaksi</a>.
+                            <?php endif; ?>
+                        </td>
                     </tr>
                 <?php else: ?>
                     <?php while ($t = mysqli_fetch_assoc($res_trx)): ?>

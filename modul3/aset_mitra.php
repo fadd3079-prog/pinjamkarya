@@ -162,6 +162,8 @@ require_once ROOT_PATH . '/includes/header.php';
                 <div class="pk-empty-state">
                     <div class="pk-empty-icon"><?= svg_icon('box', 22) ?></div>
                     <h3>Belum Ada Alat Titipan</h3>
+                    <p class="mb-2">Anda belum menitipkan perkakas ke Hub Komunitas. Isi formulir di samping untuk mendaftarkan alat titipan pertama Anda.</p>
+                    <a href="#nama_alat" class="btn btn-primary">Isi Formulir Titip Alat</a>
                 </div>
             <?php else: ?>
                 <div class="table-responsive">

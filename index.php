@@ -112,6 +112,10 @@ $q_preview = mysqli_query($conn, "SELECT a.*, k.nama_kategori
                 <?= svg_icon('arrow-down', 16) ?>
                 <span>Lihat Layanan</span>
             </a>
+            <p class="pk-hero-caption">
+                Layanan sosial pinjam perkakas<br>
+                dan perbaikan barang warga.
+            </p>
         </div>
     </div>
 </section>
@@ -120,42 +124,44 @@ $q_preview = mysqli_query($conn, "SELECT a.*, k.nama_kategori
     <div>
         <div class="pk-drawer-header">
             <strong class="fs-lg">PinjamKarya</strong>
-            <button type="button" class="btn btn-muted" id="pkHeroDrawerClose" aria-label="Tutup menu" style="min-width:40px; padding:8px;">
+            <button type="button" class="btn btn-muted" id="pkHeroDrawerClose" aria-label="Tutup menu" style="min-width:48px; padding:10px;">
                 <?= svg_icon('x', 18) ?>
             </button>
         </div>
-        <ul class="pk-drawer-list">
-            <li>
-                <a href="<?= BASE_URL ?>/modul4/katalog.php" class="pk-drawer-link">
-                    <?= svg_icon('grid', 18) ?>
-                    <span>Katalog Perkakas</span>
-                </a>
-            </li>
-            <li>
-                <a href="<?= BASE_URL ?>/modul2/panduan.php" class="pk-drawer-link">
-                    <?= svg_icon('shield', 18) ?>
-                    <span>Panduan Keselamatan</span>
-                </a>
-            </li>
-            <li>
-                <a href="<?= BASE_URL ?>/modul9/dashboard.php" class="pk-drawer-link">
-                    <?= svg_icon('bar-chart', 18) ?>
-                    <span>Dashboard Dampak</span>
-                </a>
-            </li>
-            <li>
-                <a href="<?= BASE_URL ?>/modul1/login.php" class="pk-drawer-link">
-                    <?= svg_icon('log-in', 18) ?>
-                    <span>Masuk Akun</span>
-                </a>
-            </li>
-            <li>
-                <a href="<?= BASE_URL ?>/modul1/register.php" class="pk-drawer-link">
-                    <?= svg_icon('user', 18) ?>
-                    <span>Daftar Akun</span>
-                </a>
-            </li>
-        </ul>
+        <nav aria-label="Menu Utama">
+            <ul class="pk-drawer-list">
+                <li>
+                    <a href="<?= BASE_URL ?>/modul4/katalog.php" class="pk-drawer-link">
+                        <?= svg_icon('grid', 18) ?>
+                        <span>Katalog Perkakas</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= BASE_URL ?>/modul2/panduan.php" class="pk-drawer-link">
+                        <?= svg_icon('shield', 18) ?>
+                        <span>Panduan Keselamatan</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= BASE_URL ?>/modul9/dashboard.php" class="pk-drawer-link">
+                        <?= svg_icon('bar-chart', 18) ?>
+                        <span>Dashboard Dampak</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= BASE_URL ?>/modul1/login.php" class="pk-drawer-link">
+                        <?= svg_icon('log-in', 18) ?>
+                        <span>Masuk Akun</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= BASE_URL ?>/modul1/register.php" class="pk-drawer-link">
+                        <?= svg_icon('user', 18) ?>
+                        <span>Daftar Akun</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
     </div>
 </aside>
 <div class="pk-backdrop" id="pkBackdrop" aria-hidden="true"></div>
@@ -163,20 +169,30 @@ $q_preview = mysqli_query($conn, "SELECT a.*, k.nama_kategori
 <main id="layanan-kami" class="pk-main">
     <div class="pk-container">
         <div class="pk-grid pk-grid--2 mb-4">
-            <article class="pk-card d-flex align-center justify-between flex-wrap gap-2 mb-0">
-                <h2 class="mb-0">Pinjam Perkakas &amp; Alat Kesehatan</h2>
-                <a href="<?= BASE_URL ?>/modul4/katalog.php" class="btn btn-primary">
-                    <?= svg_icon('grid', 16) ?>
-                    <span>Lihat Katalog</span>
-                </a>
+            <article class="pk-card pk-card--sky-soft d-flex flex-column justify-between gap-2 mb-0">
+                <div>
+                    <h2>Pinjam Perkakas &amp; Alat Kesehatan</h2>
+                    <p class="text-muted mb-2">Gunakan alat pertukangan, kebun, hingga kursi roda darurat bersama warga tanpa harus membeli baru.</p>
+                </div>
+                <div>
+                    <a href="<?= BASE_URL ?>/modul4/katalog.php" class="btn btn-primary btn-pill">
+                        <?= svg_icon('grid', 16) ?>
+                        <span>Lihat Katalog</span>
+                    </a>
+                </div>
             </article>
 
-            <article class="pk-card d-flex align-center justify-between flex-wrap gap-2 mb-0">
-                <h2 class="mb-0">Perbaiki Barang Rusak</h2>
-                <a href="<?= BASE_URL ?>/modul1/login.php" class="btn btn-warm">
-                    <?= svg_icon('wrench', 16) ?>
-                    <span>Ajukan Perbaikan</span>
-                </a>
+            <article class="pk-card pk-card--warm-soft d-flex flex-column justify-between gap-2 mb-0">
+                <div>
+                    <h2>Perbaiki Barang Rusak</h2>
+                    <p class="text-muted mb-2">Konsultasikan elektronik atau perabot rusak ke teknisi komunitas dengan estimasi biaya transparan sebelum diservis.</p>
+                </div>
+                <div>
+                    <a href="<?= BASE_URL ?>/modul1/login.php" class="btn btn-warm btn-pill">
+                        <?= svg_icon('wrench', 16) ?>
+                        <span>Ajukan Perbaikan</span>
+                    </a>
+                </div>
             </article>
         </div>
 
@@ -192,15 +208,15 @@ $q_preview = mysqli_query($conn, "SELECT a.*, k.nama_kategori
             </div>
 
             <div class="pk-grid pk-grid--3">
-                <div class="pk-card mb-0">
+                <div class="pk-card pk-card--primary-soft mb-0">
                     <div class="text-muted">Alat Tersedia</div>
                     <div class="fs-xl fw-bold text-primary mt-1"><?= $jml_alat_tersedia ?> Unit</div>
                 </div>
-                <div class="pk-card mb-0">
+                <div class="pk-card pk-card--secondary-soft mb-0">
                     <div class="text-muted">Barang Diperbaiki</div>
                     <div class="fs-xl fw-bold text-secondary mt-1"><?= $jml_barang_diperbaiki ?> Unit</div>
                 </div>
-                <div class="pk-card mb-0">
+                <div class="pk-card pk-card--warm-soft mb-0">
                     <div class="text-muted">Total Penghematan Warga</div>
                     <div class="fs-xl fw-bold text-warm mt-1"><?= rupiah($total_penghematan) ?></div>
                 </div>

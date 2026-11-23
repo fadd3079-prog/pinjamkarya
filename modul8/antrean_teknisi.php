@@ -98,12 +98,13 @@ require_once ROOT_PATH . '/includes/header.php';
 </div>
 
 <?php if (!$is_verified): ?>
-    <section class="pk-card" aria-labelledby="unverified-heading">
-        <div class="d-flex align-center gap-2 mb-3">
+    <section class="pk-card pk-card--warm-soft" aria-labelledby="unverified-heading">
+        <div class="d-flex align-center gap-2 mb-2">
             <?= svg_icon('alert-triangle', 20) ?>
             <h2 id="unverified-heading" class="mb-0">Menunggu Verifikasi Admin Hub</h2>
         </div>
-        <a href="<?= BASE_URL ?>/modul1/profil.php" class="btn btn-primary">Lihat Profil</a>
+        <p class="mb-3">Akun Mitra Teknisi Anda sedang ditinjau Admin Hub. Anda dapat mengklaim tiket perbaikan segera setelah status verifikasi disetujui.</p>
+        <a href="<?= BASE_URL ?>/modul1/profil.php" class="btn btn-primary">Periksa Status di Profil</a>
     </section>
 <?php else: ?>
     <?php
@@ -112,29 +113,36 @@ require_once ROOT_PATH . '/includes/header.php';
     ?>
     <div class="pk-tabs" role="tablist" aria-label="Meja Kerja Teknisi">
         <button type="button"
+                id="tabBtnOpenTickets"
                 class="pk-tab-btn <?= $active_tab === 'open' ? 'active' : '' ?>"
                 role="tab"
                 aria-selected="<?= $active_tab === 'open' ? 'true' : 'false' ?>"
+                aria-controls="tabOpenTickets"
+                tabindex="<?= $active_tab === 'open' ? '0' : '-1' ?>"
                 data-tab-target="#tabOpenTickets">
             <?= svg_icon('clipboard', 16) ?>
             <span>Antrean Terbuka (<?= $cnt_open ?>)</span>
         </button>
 
         <button type="button"
+                id="tabBtnMyJobs"
                 class="pk-tab-btn <?= $active_tab === 'myjobs' ? 'active' : '' ?>"
                 role="tab"
                 aria-selected="<?= $active_tab === 'myjobs' ? 'true' : 'false' ?>"
+                aria-controls="tabMyJobs"
+                tabindex="<?= $active_tab === 'myjobs' ? '0' : '-1' ?>"
                 data-tab-target="#tabMyJobs">
             <?= svg_icon('wrench', 16) ?>
             <span>Pekerjaan Saya (<?= $cnt_jobs ?>)</span>
         </button>
     </div>
 
-    <div id="tabOpenTickets" class="pk-tab-panel <?= $active_tab === 'open' ? 'active' : '' ?>" role="tabpanel">
+    <div id="tabOpenTickets" class="pk-tab-panel <?= $active_tab === 'open' ? 'active' : '' ?>" role="tabpanel" aria-labelledby="tabBtnOpenTickets">
         <?php if ($cnt_open === 0): ?>
             <div class="pk-empty-state">
                 <div class="pk-empty-icon"><?= svg_icon('check-circle', 22) ?></div>
                 <h3>Tidak Ada Antrean Tiket Terbuka</h3>
+                <p class="mb-0">Seluruh laporan kerusakan warga saat ini sudah ditangani. Periksa tab <strong>Pekerjaan Saya</strong> untuk memperbarui progres servis aktif Anda.</p>
             </div>
         <?php else: ?>
             <?php while ($t = mysqli_fetch_assoc($res_open)): ?>
@@ -212,11 +220,12 @@ require_once ROOT_PATH . '/includes/header.php';
         <?php endif; ?>
     </div>
 
-    <div id="tabMyJobs" class="pk-tab-panel <?= $active_tab === 'myjobs' ? 'active' : '' ?>" role="tabpanel">
+    <div id="tabMyJobs" class="pk-tab-panel <?= $active_tab === 'myjobs' ? 'active' : '' ?>" role="tabpanel" aria-labelledby="tabBtnMyJobs">
         <?php if ($cnt_jobs === 0): ?>
             <div class="pk-empty-state">
                 <div class="pk-empty-icon"><?= svg_icon('wrench', 22) ?></div>
                 <h3>Belum Ada Pekerjaan Servis</h3>
+                <p class="mb-0">Anda belum mengklaim tiket perbaikan. Buka tab <strong>Antrean Terbuka</strong> untuk memilih laporan kerusakan warga dan mengirim diagnosis.</p>
             </div>
         <?php else: ?>
             <div class="table-responsive">
