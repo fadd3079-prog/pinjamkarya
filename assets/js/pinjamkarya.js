@@ -280,107 +280,246 @@ document.addEventListener('DOMContentLoaded', function () {
     updateDateConstraints();
   }
 
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  document.querySelectorAll('[data-masonry]').forEach(function (grid) {
-    const cards = Array.from(grid.querySelectorAll('.pk-tool-card'));
-    if (!cards.length) return;
+  const customSelects = [];
+  let selectUid = 0;
 
-    let debounceId = 0;
-    let lastWidth = -1;
-    let lastCols = -1;
+  function closeAllSelects(exceptWrap) {
+    for (let i = 0; i < customSelects.length; i += 1) {
+      const item = customSelects[i];
+      if (item.wrap !== exceptWrap && item.wrap.classList.contains('is-open')) {
+        item.wrap.classList.remove('is-open', 'pk-select--up');
+        item.trigger.setAttribute('aria-expanded', 'false');
+      }
+    }
+  }
 
-    function columnCount() {
-      const w = window.innerWidth;
-      if (w >= 1100) return 4;
-      if (w >= 768) return 3;
-      return 2;
+  document.querySelectorAll('select.form-select:not([multiple])').forEach(function (selectEl) {
+    if (selectEl.closest('.pk-select')) return;
+    selectUid += 1;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'pk-select';
+    if (selectEl.disabled) {
+      wrap.classList.add('is-disabled');
     }
 
-    function layoutMasonry() {
-      const cols = columnCount();
-      const gap = parseFloat(getComputedStyle(grid).getPropertyValue('--pk-masonry-gap')) || 12;
-      const width = grid.clientWidth;
-      if (width <= 0) return;
+    selectEl.parentNode.insertBefore(wrap, selectEl);
+    wrap.appendChild(selectEl);
 
-      const colWidth = Math.floor((width - (cols - 1) * gap) / cols);
-      const colHeights = new Array(cols).fill(0);
+    selectEl.classList.add('pk-select-native');
+    selectEl.setAttribute('tabindex', '-1');
+    selectEl.setAttribute('aria-hidden', 'true');
 
-      for (let i = 0; i < cards.length; i += 1) {
-        const card = cards[i];
-        const ratio = parseFloat(card.dataset.ratio) || 0.75;
-        const height = Math.max(cols <= 2 ? 158 : 0, Math.round(colWidth * ratio));
-        let col = 0;
-        for (let c = 1; c < cols; c += 1) {
-          if (colHeights[c] < colHeights[col]) col = c;
-        }
-        const x = col * (colWidth + gap);
-        const y = colHeights[col];
-        card.style.width = colWidth + 'px';
-        card.style.height = height + 'px';
-        card.style.transform = 'translate3d(' + x + 'px, ' + y + 'px, 0)';
-        colHeights[col] += height + gap;
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'pk-select-trigger';
+    trigger.setAttribute('role', 'combobox');
+    trigger.setAttribute('aria-haspopup', 'listbox');
+    trigger.setAttribute('aria-expanded', 'false');
+    const menuId = 'pkSelectMenu_' + selectUid;
+    trigger.setAttribute('aria-controls', menuId);
+    if (selectEl.disabled) {
+      trigger.disabled = true;
+    }
+
+    const labelledBy = selectEl.getAttribute('aria-label');
+    if (labelledBy) {
+      trigger.setAttribute('aria-label', labelledBy);
+    }
+
+    const valueWrap = document.createElement('span');
+    valueWrap.className = 'pk-select-value';
+
+    const valueLabel = document.createElement('span');
+    valueLabel.className = 'pk-select-value-text';
+
+    const valueCount = document.createElement('span');
+    valueCount.className = 'pk-select-count';
+    valueCount.hidden = true;
+
+    valueWrap.appendChild(valueLabel);
+    valueWrap.appendChild(valueCount);
+
+    const chevron = document.createElement('span');
+    chevron.className = 'pk-select-chevron';
+    chevron.setAttribute('aria-hidden', 'true');
+    chevron.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+    trigger.appendChild(valueWrap);
+    trigger.appendChild(chevron);
+
+    const menu = document.createElement('div');
+    menu.id = menuId;
+    menu.className = 'pk-select-menu';
+    menu.setAttribute('role', 'listbox');
+
+    const optionButtons = [];
+
+    function syncSelectedDisplay() {
+      const selectedIdx = selectEl.selectedIndex >= 0 ? selectEl.selectedIndex : 0;
+      const optEl = selectEl.options[selectedIdx];
+      valueLabel.textContent = optEl ? optEl.textContent.trim() : '';
+      const countVal = optEl ? optEl.getAttribute('data-count') : null;
+      if (countVal !== null && countVal !== '') {
+        valueCount.textContent = countVal;
+        valueCount.hidden = false;
+      } else {
+        valueCount.textContent = '';
+        valueCount.hidden = true;
       }
 
-      const tallest = Math.max.apply(null, colHeights.concat([0]));
-      grid.style.height = Math.max(0, tallest - gap) + 'px';
-      lastWidth = width;
-      lastCols = cols;
+      for (let i = 0; i < optionButtons.length; i += 1) {
+        const btn = optionButtons[i];
+        const isSel = i === selectedIdx;
+        btn.classList.toggle('is-selected', isSel);
+        btn.setAttribute('aria-selected', isSel ? 'true' : 'false');
+      }
     }
 
-    function scheduleLayout() {
-      if (debounceId) clearTimeout(debounceId);
-      debounceId = setTimeout(function () {
-        debounceId = 0;
-        layoutMasonry();
-      }, 120);
-    }
+    Array.from(selectEl.options).forEach(function (opt, idx) {
+      const optBtn = document.createElement('button');
+      optBtn.type = 'button';
+      optBtn.className = 'pk-select-option';
+      optBtn.setAttribute('role', 'option');
+      optBtn.setAttribute('data-value', opt.value);
+      optBtn.setAttribute('data-index', String(idx));
+      if (opt.disabled) {
+        optBtn.disabled = true;
+      }
 
-    grid.classList.add('is-masonry');
-    layoutMasonry();
-    if (!reducedMotion.matches) {
-      requestAnimationFrame(function () {
-        requestAnimationFrame(function () {
-          grid.classList.add('is-animated');
+      const mainRow = document.createElement('span');
+      mainRow.className = 'pk-select-opt-label';
+      mainRow.textContent = opt.textContent.trim();
+      optBtn.appendChild(mainRow);
+
+      const metaRight = document.createElement('span');
+      metaRight.className = 'pk-select-opt-right';
+
+      const countAttr = opt.getAttribute('data-count');
+      if (countAttr !== null && countAttr !== '') {
+        const badge = document.createElement('span');
+        badge.className = 'pk-select-count';
+        badge.textContent = countAttr;
+        metaRight.appendChild(badge);
+      }
+
+      const check = document.createElement('span');
+      check.className = 'pk-select-check';
+      check.setAttribute('aria-hidden', 'true');
+      check.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3.5 8.2l3 3 6-6.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      metaRight.appendChild(check);
+
+      optBtn.appendChild(metaRight);
+
+      optBtn.addEventListener('click', function () {
+        if (opt.disabled) return;
+        const prevVal = selectEl.value;
+        selectEl.selectedIndex = idx;
+        syncSelectedDisplay();
+        closeAllSelects(null);
+        trigger.focus();
+
+        if (prevVal !== opt.value) {
+          selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+          if (selectEl.hasAttribute('data-auto-submit') && selectEl.form) {
+            if (typeof selectEl.form.requestSubmit === 'function') {
+              selectEl.form.requestSubmit();
+            } else {
+              selectEl.form.submit();
+            }
+          }
+        }
+      });
+
+      optionButtons.push(optBtn);
+      menu.appendChild(optBtn);
+    });
+
+    wrap.appendChild(trigger);
+    wrap.appendChild(menu);
+    syncSelectedDisplay();
+
+    if (selectEl.id) {
+      document.querySelectorAll('label[for="' + selectEl.id + '"]').forEach(function (lbl) {
+        lbl.addEventListener('click', function (e) {
+          e.preventDefault();
+          if (!trigger.disabled) trigger.focus();
         });
       });
     }
 
-    cards.forEach(function (card) {
-      const img = card.querySelector('img');
-      if (!img) return;
-      function syncImgRatio() {
-        if (img.naturalWidth > 0 && img.naturalHeight > 0) {
-          const actualRatio = img.naturalHeight / img.naturalWidth;
-          const prevRatio = parseFloat(card.dataset.ratio) || 0;
-          if (Math.abs(actualRatio - prevRatio) >= 0.005) {
-            card.dataset.ratio = String(actualRatio);
-            card.style.setProperty('--ratio', String(actualRatio));
-            scheduleLayout();
-          }
-        }
+    function openMenu() {
+      if (trigger.disabled) return;
+      closeAllSelects(wrap);
+      wrap.classList.remove('pk-select--up');
+      const rect = trigger.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      if (spaceBelow < 220 && rect.top > spaceBelow) {
+        wrap.classList.add('pk-select--up');
       }
-      if (img.complete) {
-        syncImgRatio();
-      } else {
-        img.addEventListener('load', syncImgRatio, { once: true });
-      }
-    });
-
-    if ('ResizeObserver' in window) {
-      const ro = new ResizeObserver(function () {
-        const w = grid.clientWidth;
-        const c = columnCount();
-        if (Math.abs(w - lastWidth) >= 2 || c !== lastCols) {
-          scheduleLayout();
-        }
-      });
-      ro.observe(grid);
+      wrap.classList.add('is-open');
+      trigger.setAttribute('aria-expanded', 'true');
     }
 
-    window.addEventListener('resize', function () {
-      if (Math.abs(grid.clientWidth - lastWidth) >= 2 || columnCount() !== lastCols) {
-        scheduleLayout();
+    trigger.addEventListener('click', function () {
+      if (wrap.classList.contains('is-open')) {
+        closeAllSelects(null);
+      } else {
+        openMenu();
       }
     });
+
+    trigger.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        openMenu();
+        const activeBtn = menu.querySelector('.pk-select-option.is-selected:not(:disabled)') || menu.querySelector('.pk-select-option:not(:disabled)');
+        if (activeBtn) activeBtn.focus();
+      }
+    });
+
+    menu.addEventListener('keydown', function (e) {
+      const enabledOpts = optionButtons.filter(function (b) { return !b.disabled; });
+      const curIdx = enabledOpts.indexOf(document.activeElement);
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const next = enabledOpts[Math.min(enabledOpts.length - 1, Math.max(0, curIdx + 1))];
+        if (next) next.focus();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        const prev = enabledOpts[Math.max(0, curIdx - 1)];
+        if (prev) prev.focus();
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        if (enabledOpts[0]) enabledOpts[0].focus();
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        if (enabledOpts[enabledOpts.length - 1]) enabledOpts[enabledOpts.length - 1].focus();
+      } else if (e.key === 'Escape' || e.key === 'Tab') {
+        closeAllSelects(null);
+        if (e.key === 'Escape') trigger.focus();
+      }
+    });
+
+    selectEl.addEventListener('change', syncSelectedDisplay);
+    if (selectEl.form) {
+      selectEl.form.addEventListener('reset', function () {
+        setTimeout(syncSelectedDisplay, 0);
+      });
+    }
+
+    customSelects.push({ wrap: wrap, trigger: trigger, menu: menu });
+  });
+
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('.pk-select')) {
+      closeAllSelects(null);
+    }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      closeAllSelects(null);
+    }
   });
 });

@@ -104,62 +104,78 @@ require_once ROOT_PATH . '/includes/header.php';
 </div>
 
 <section class="pk-filters" aria-label="Filter Katalog">
-    <div class="pk-filters-row">
-        <div class="pk-pill-tabs" role="navigation" aria-label="Filter kategori">
-            <a href="<?= e(katalog_filter_url(['id_kategori' => 0])) ?>" class="pk-pill<?= $id_kategori === 0 ? ' is-active' : '' ?>">
-                <span>Semua</span>
-                <span class="pk-pill-count"><?= $total_semua ?></span>
-            </a>
-            <?php foreach ($kategori_list as $kat): ?>
-                <a href="<?= e(katalog_filter_url(['id_kategori' => (int)$kat['id_kategori']])) ?>" class="pk-pill<?= $id_kategori === (int)$kat['id_kategori'] ? ' is-active' : '' ?>">
-                    <span><?= e($kat['nama_kategori']) ?></span>
-                    <span class="pk-pill-count"><?= (int)$kat['total_alat'] ?></span>
-                </a>
-            <?php endforeach; ?>
-        </div>
-
-        <form method="get" action="<?= BASE_URL ?>/katalog/index.php" class="pk-search-wrap">
-            <?php if ($id_kategori > 0): ?>
-                <input type="hidden" name="id_kategori" value="<?= $id_kategori ?>">
-            <?php endif; ?>
-            <?php if ($tgl_mulai !== ''): ?>
-                <input type="hidden" name="tgl_mulai" value="<?= e($tgl_mulai) ?>">
-            <?php endif; ?>
-            <?php if ($tgl_selesai !== ''): ?>
-                <input type="hidden" name="tgl_selesai" value="<?= e($tgl_selesai) ?>">
-            <?php endif; ?>
+    <form method="get" action="<?= BASE_URL ?>/katalog/index.php" class="pk-filter-panel">
+        <div class="pk-filter-bar-grid">
             <div class="pk-search-field">
-                <span class="pk-search-icon"><?= svg_icon('search', 16) ?></span>
+                <span class="pk-search-icon" aria-hidden="true"><?= svg_icon('search', 16) ?></span>
                 <label class="sr-only" for="q">Cari alat</label>
-                <input type="search" id="q" name="q" class="form-control" placeholder="Cari alat..." value="<?= e($q) ?>">
+                <input type="search" id="q" name="q" class="form-control" placeholder="Cari perkakas..." value="<?= e($q) ?>">
             </div>
-            <button type="submit" class="btn btn-primary">Cari</button>
-        </form>
-    </div>
 
-    <form method="get" action="<?= BASE_URL ?>/katalog/index.php" class="pk-date-strip">
-        <?php if ($q !== ''): ?>
-            <input type="hidden" name="q" value="<?= e($q) ?>">
-        <?php endif; ?>
-        <?php if ($id_kategori > 0): ?>
-            <input type="hidden" name="id_kategori" value="<?= $id_kategori ?>">
-        <?php endif; ?>
-        <span class="pk-date-strip-label">Cek jadwal</span>
-        <label class="sr-only" for="tgl_mulai">Mulai Tanggal</label>
-        <input type="date" id="tgl_mulai" name="tgl_mulai" class="pk-date-chip" min="<?= date('Y-m-d') ?>" value="<?= e($tgl_mulai) ?>">
-        <span class="text-muted">-</span>
-        <label class="sr-only" for="tgl_selesai">Sampai Tanggal</label>
-        <input type="date" id="tgl_selesai" name="tgl_selesai" class="pk-date-chip" min="<?= date('Y-m-d') ?>" value="<?= e($tgl_selesai) ?>">
-        <button type="submit" class="btn btn-outline">Terapkan</button>
-        <?php if ($q !== '' || $id_kategori > 0 || $filter_tanggal_aktif): ?>
-            <a href="<?= BASE_URL ?>/katalog/index.php" class="btn btn-muted">Reset</a>
-        <?php endif; ?>
+            <div class="pk-filter-select-wrap">
+                <label class="sr-only" for="id_kategori">Filter Kategori</label>
+                <select id="id_kategori" name="id_kategori" class="form-select" data-auto-submit="1" aria-label="Pilih kategori perkakas">
+                    <option value="0" data-count="<?= $total_semua ?>"<?= $id_kategori === 0 ? ' selected' : '' ?>>Semua Kategori</option>
+                    <?php foreach ($kategori_list as $kat): ?>
+                        <option value="<?= (int)$kat['id_kategori'] ?>" data-count="<?= (int)$kat['total_alat'] ?>"<?= $id_kategori === (int)$kat['id_kategori'] ? ' selected' : '' ?>>
+                            <?= e($kat['nama_kategori']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div class="pk-date-pair" role="group" aria-label="Cek jadwal ketersediaan">
+                <label class="pk-date-box" for="tgl_mulai">
+                    <span class="pk-date-box-label">Dari</span>
+                    <input type="date" id="tgl_mulai" name="tgl_mulai" class="pk-date-input" min="<?= date('Y-m-d') ?>" value="<?= e($tgl_mulai) ?>">
+                </label>
+                <label class="pk-date-box" for="tgl_selesai">
+                    <span class="pk-date-box-label">Sampai</span>
+                    <input type="date" id="tgl_selesai" name="tgl_selesai" class="pk-date-input" min="<?= date('Y-m-d') ?>" value="<?= e($tgl_selesai) ?>">
+                </label>
+            </div>
+
+            <div class="pk-filter-actions">
+                <button type="submit" class="btn btn-primary">Terapkan</button>
+                <?php if ($q !== '' || $id_kategori > 0 || $filter_tanggal_aktif): ?>
+                    <a href="<?= BASE_URL ?>/katalog/index.php" class="btn btn-outline">Reset</a>
+                <?php endif; ?>
+            </div>
+        </div>
     </form>
-</section>
 
-<?php if ($filter_tanggal_aktif): ?>
-    <?= render_alert('info', 'Menampilkan alat tersedia pada ' . format_tanggal($tgl_mulai) . ' - ' . format_tanggal($tgl_selesai) . '.', false, 'calendar') ?>
-<?php endif; ?>
+    <?php if ($q !== '' || $id_kategori > 0 || $filter_tanggal_aktif): ?>
+        <div class="pk-active-filters" aria-label="Filter aktif">
+            <?php if ($q !== ''): ?>
+                <a href="<?= e(katalog_filter_url(['q' => ''])) ?>" class="pk-filter-chip" title="Hapus pencarian">
+                    <span>Cari: <?= e($q) ?></span>
+                    <?= svg_icon('x', 13) ?>
+                </a>
+            <?php endif; ?>
+            <?php if ($id_kategori > 0): ?>
+                <?php
+                $active_kat_name = 'Kategori';
+                foreach ($kategori_list as $kat) {
+                    if ((int)$kat['id_kategori'] === $id_kategori) {
+                        $active_kat_name = (string)$kat['nama_kategori'];
+                        break;
+                    }
+                }
+                ?>
+                <a href="<?= e(katalog_filter_url(['id_kategori' => 0])) ?>" class="pk-filter-chip" title="Tampilkan semua kategori">
+                    <span><?= e($active_kat_name) ?></span>
+                    <?= svg_icon('x', 13) ?>
+                </a>
+            <?php endif; ?>
+            <?php if ($filter_tanggal_aktif): ?>
+                <a href="<?= e(katalog_filter_url(['tgl_mulai' => '', 'tgl_selesai' => ''])) ?>" class="pk-filter-chip" title="Hapus filter jadwal">
+                    <span><?= e(format_tanggal($tgl_mulai)) ?> &ndash; <?= e(format_tanggal($tgl_selesai)) ?></span>
+                    <?= svg_icon('x', 13) ?>
+                </a>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
+</section>
 
 <?php if ($jumlah_hasil === 0): ?>
     <div class="pk-empty-state">
@@ -170,7 +186,7 @@ require_once ROOT_PATH . '/includes/header.php';
         </div>
     </div>
 <?php else: ?>
-    <div class="pk-masonry" data-masonry>
+    <div class="pk-masonry">
         <?php while ($alat = mysqli_fetch_assoc($res_alat)): ?>
             <?php
             $alat['is_unavailable'] = ($alat['status_alat'] !== 'Tersedia') || ($filter_tanggal_aktif && !empty($alat['is_bentrok']));

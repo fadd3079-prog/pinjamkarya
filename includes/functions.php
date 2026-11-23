@@ -298,8 +298,8 @@ function get_hero_banner(): ?string {
 function build_placeholder_svg(string $label, string $bg_color, string $ring_stroke, string $accent_color): string {
     $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400">'
          . '<rect width="640" height="400" fill="' . $bg_color . '"/>'
-         . '<circle cx="320" cy="148" r="54" fill="#fbfaf8" stroke="' . $ring_stroke . '" stroke-width="1.5"/>'
-         . '<g transform="translate(285 113) scale(0.14)">' . brand_logo_paths('#1e1e1c', $accent_color) . '</g>'
+         . '<circle cx="320" cy="200" r="56" fill="#fbfaf8" stroke="' . $ring_stroke . '" stroke-width="1.5"/>'
+         . '<g transform="translate(300.4 167.4) scale(0.42)">' . brand_logo_paths('#1e1e1c', $accent_color) . '</g>'
          . '</svg>';
     return 'data:image/svg+xml;utf8,' . rawurlencode($svg);
 }
@@ -443,9 +443,9 @@ function badge_kondisi_fisik(string $kondisi): string {
     return '<span class="pk-badge ' . $cls . '">' . e($kondisi) . '</span>';
 }
 
-function brand_logo_paths(string $body_color, string $accent_color): string {
-    return '<path fill="' . $body_color . '" d="M438 107q-3-3-7-3h-83q-7 0-8 8v44h-40v-44q-1-8-8-8h-88q-7 0-8 8v44h-43v-44q0-8-8-8H66q-4 0-7 3L1 192l-1 4v56q1 7 8 8h83q8 0 8-8l2-33h60v33q1 7 8 8h164q8-1 8-8v-33h60l1 33q1 8 8 8h81q7-1 8-8v-63l-2-5zM491 273h-82q-8 1-9 9v18h-67v-18q0-8-8-9H167q-8 1-8 9v18H98v-18q-1-8-8-9H8q-7 1-8 9v153q1 7 8 8h483q7-1 8-8V282q-1-8-8-9zM324 149q7 0 8-8v-41c0-2-4-44-83-44-78 0-82 42-82 44v41a8 8 0 1 0 16 0v-40c0-3 6-29 66-29 61 0 66 26 67 29v40q0 8 8 8"/>'
-         . '<path fill="' . $accent_color . '" d="M146 290q8-1 9-8v-46q-1-7-9-8h-36q-7 1-8 8v46q1 7 8 8zM390 290q8-1 8-8v-46q0-7-8-8h-36q-7 1-8 8v46q1 7 8 8z"/>';
+function brand_logo_paths(string $body_color, string $accent_color = ''): string {
+    return '<path fill="' . $body_color . '" d="M0.131134 57.1743V10.6218C0.131134 4.82795 4.82798 0.131104 10.6218 0.131104H55.7943C59.5423 0.131104 63.0055 2.13062 64.8795 5.37645L91.7566 51.9289C95.7945 58.9227 90.7471 67.6649 82.6714 67.6649H10.6218C4.82798 67.6649 0.131134 62.9681 0.131134 57.1743Z"/>'
+         . '<path fill="' . $body_color . '" d="M0.131134 144.64L0.131141 88.1218C0.131142 82.3279 4.82799 77.6311 10.6218 77.6311H51.3604C57.1543 77.6311 61.8511 82.3279 61.8511 88.1218V144.64C61.8511 150.434 57.1543 155.131 51.3604 155.131H10.6218C4.82798 155.131 0.131134 150.434 0.131134 144.64Z"/>';
 }
 
 function brand_logo(string $variant = 'dark', int $size = 22): string {
@@ -455,7 +455,7 @@ function brand_logo(string $variant = 'dark', int $size = 22): string {
         'soft'  => ['body' => '#1e1e1c', 'accent' => '#5c5a55'],
     ];
     $colors = $palettes[$variant] ?? $palettes['light'];
-    return '<svg xmlns="http://www.w3.org/2000/svg" width="' . $size . '" height="' . $size . '" viewBox="0 0 499 499" aria-hidden="true" focusable="false">'
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="' . $size . '" height="' . $size . '" viewBox="-31 0 156 156" aria-hidden="true" focusable="false">'
          . brand_logo_paths($colors['body'], $colors['accent'])
          . '</svg>';
 }
@@ -536,43 +536,39 @@ function render_public_footer(): string {
 
 function render_tool_card(array $alat, string $detail_url, string $heading_tag = 'h2'): string {
     $tag = in_array($heading_tag, ['h2', 'h3'], true) ? $heading_tag : 'h2';
-    $biaya = (float)($alat['biaya_perawatan'] ?? 0) <= 0 ? 'Gratis' : rupiah((float)$alat['biaya_perawatan']);
+    $is_free = (float)($alat['biaya_perawatan'] ?? 0) <= 0;
+    $biaya = $is_free ? 'Gratis' : rupiah((float)$alat['biaya_perawatan']);
     $status_alat = (string)($alat['status_alat'] ?? 'Tersedia');
     $is_unavailable = !empty($alat['is_unavailable']) || ($status_alat !== 'Tersedia');
     $img_info = get_gambar_alat_info($alat['foto_alat'] ?? '', $alat['nama_alat'] ?? '');
 
     ob_start();
     ?>
-<article class="pk-tool-card<?= $is_unavailable ? ' is-unavailable' : '' ?>"
-         data-ratio="<?= e((string)$img_info['ratio']) ?>"
-         style="--ratio: <?= e((string)$img_info['ratio']) ?>;">
+<article class="pk-tool-card<?= $is_unavailable ? ' is-unavailable' : '' ?>">
     <div class="pk-tool-media">
         <img src="<?= e($img_info['url']) ?>"
              alt="<?= e($alat['nama_alat'] ?? '') ?>"
              width="<?= (int)$img_info['width'] ?>"
              height="<?= (int)$img_info['height'] ?>"
              loading="lazy">
-    </div>
-
-    <div class="pk-tool-status">
-        <?php if ($is_unavailable): ?>
-            <span class="pk-badge pk-badge--unavailable">Tidak Tersedia</span>
-            <?php if ($status_alat !== 'Tersedia'): ?>
+        <div class="pk-tool-status">
+            <?php if ($is_unavailable): ?>
+                <span class="pk-badge pk-badge--unavailable">Tidak Tersedia</span>
+                <?php if ($status_alat !== 'Tersedia'): ?>
+                    <?= badge_status_alat($status_alat) ?>
+                <?php endif; ?>
+            <?php else: ?>
                 <?= badge_status_alat($status_alat) ?>
             <?php endif; ?>
-        <?php else: ?>
-            <?= badge_status_alat($status_alat) ?>
-        <?php endif; ?>
+        </div>
     </div>
 
-    <div class="pk-tool-shade">
+    <div class="pk-tool-body">
         <span class="pk-tool-meta-label"><?= e($alat['nama_kategori'] ?? '') ?></span>
         <<?= $tag ?> class="pk-tool-title"><?= e($alat['nama_alat'] ?? '') ?></<?= $tag ?>>
         <div class="pk-tool-foot">
-            <span class="pk-tool-specs">
-                <?= (int)($alat['max_hari_pinjam'] ?? 0) ?> Hari &middot; Skor <?= (int)($alat['min_skor'] ?? 0) ?> &middot; <?= e($biaya) ?>
-            </span>
-            <span class="pk-tool-arrow" aria-hidden="true">&#8594;</span>
+            <span class="pk-tool-fee<?= $is_free ? ' pk-tool-fee--free' : '' ?>"><?= e($biaya) ?></span>
+            <span class="pk-tool-specs"><?= (int)($alat['max_hari_pinjam'] ?? 0) ?> hr &middot; Skor <?= (int)($alat['min_skor'] ?? 0) ?></span>
         </div>
     </div>
 

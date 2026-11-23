@@ -21,8 +21,8 @@ $page_title_full = isset($page_title) && $page_title !== ''
     <meta name="theme-color" content="#f3f2ee">
     <meta name="description" content="PinjamKarya: Platform pinjam perkakas komunitas dan perbaikan barang warga.">
     <title><?= e($page_title_full) ?></title>
-    <link rel="icon" type="image/svg+xml" href="<?= BASE_URL ?>/assets/favicon.svg">
-    <link rel="shortcut icon" href="<?= BASE_URL ?>/assets/favicon.svg">
+    <link rel="icon" type="image/svg+xml" href="<?= BASE_URL ?>/assets/favicon.svg?v=<?= filemtime(ROOT_PATH . '/assets/favicon.svg') ?>">
+    <link rel="shortcut icon" href="<?= BASE_URL ?>/assets/favicon.svg?v=<?= filemtime(ROOT_PATH . '/assets/favicon.svg') ?>">
     <link rel="preload" href="<?= BASE_URL ?>/assets/fonts/AdwaitaSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/pinjamkarya-ui.css?v=<?= filemtime(ROOT_PATH . '/assets/css/pinjamkarya-ui.css') ?>">
 </head>

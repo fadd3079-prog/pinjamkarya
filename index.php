@@ -42,8 +42,8 @@ $q_preview = mysqli_query($conn, "SELECT a.*, k.nama_kategori
     <meta name="theme-color" content="#f3f2ee">
     <meta name="description" content="PinjamKarya: Platform pinjam alat komunitas dan layanan perbaikan barang warga.">
     <title>Pinjam Karya.</title>
-    <link rel="icon" type="image/svg+xml" href="<?= BASE_URL ?>/assets/favicon.svg">
-    <link rel="shortcut icon" href="<?= BASE_URL ?>/assets/favicon.svg">
+    <link rel="icon" type="image/svg+xml" href="<?= BASE_URL ?>/assets/favicon.svg?v=<?= filemtime(__DIR__ . '/assets/favicon.svg') ?>">
+    <link rel="shortcut icon" href="<?= BASE_URL ?>/assets/favicon.svg?v=<?= filemtime(__DIR__ . '/assets/favicon.svg') ?>">
     <link rel="preload" href="<?= BASE_URL ?>/assets/fonts/AdwaitaSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/pinjamkarya-ui.css?v=<?= filemtime(__DIR__ . '/assets/css/pinjamkarya-ui.css') ?>">
 </head>
@@ -161,7 +161,7 @@ $q_preview = mysqli_query($conn, "SELECT a.*, k.nama_kategori
                 <a href="<?= BASE_URL ?>/katalog/index.php" class="btn btn-outline">Lihat Katalog</a>
             </div>
 
-            <div class="pk-masonry" data-masonry>
+            <div class="pk-masonry">
                 <?php while ($item = mysqli_fetch_assoc($q_preview)): ?>
                     <?= render_tool_card($item, BASE_URL . '/katalog/detail_alat.php?id=' . (int)$item['id_alat'], 'h3') ?>
                 <?php endwhile; ?>
