@@ -21,25 +21,40 @@ Banyak keluarga dan pelaku UMKM membutuhkan perkakas kerja atau peralatan produk
 
 ---
 
-## 3. Daftar Lengkap 9 Modul dan Alur Kerja Sistem
-1. **Modul 1: Autentikasi, Peran & Skor Kredibilitas (`modul1/`)**
-   - Mengelola pendaftaran warga/mitra (`register.php`), autentikasi sesi (`login.php`, `logout.php`), pembaruan profil dan visualisasi Skor Kepercayaan (`profil.php`), serta panel Admin untuk memverifikasi teknisi baru (`kelola_user.php`).
-2. **Modul 2: Master Kategori, Panduan Keselamatan & Parameter SDGs (`modul2/`)**
-   - Menyediakan halaman publik prosedur keselamatan kerja wajib baca (`panduan.php`) serta CRUD master kategori beserta acuan bobot limbah (`rata_rata_berat_kg`) dan estimasi harga beli baru (`kelola_kategori.php`).
-3. **Modul 3: Manajemen Inventaris Aset & Penitipan Mitra (`modul3/`)**
-   - Mengelola inventaris perkakas Hub dan verifikasi fisik alat titipan mitra (`kelola_aset.php`), serta formulir penitipan alat bagi Mitra Kontributor (`aset_mitra.php`).
-4. **Modul 4: Katalog Publik & Kalender Ketersediaan (`modul4/`)**
-   - Menampilkan katalog perkakas dengan pembersihan otomatis *Ghost Booking* dan penyaringan jadwal kosong bebas bentrok (`katalog.php`), dilengkapi halaman spesifikasi dan kalender tanggal terisi (`detail_alat.php`).
-5. **Modul 5: Mesin Reservasi & Transaksi Peminjaman (`modul5/`)**
-   - Mengelola pengajuan reservasi dengan gerbang Skor Kepercayaan, persetujuan SOP keselamatan, dan transaksi SQL atomik anti-*double booking* (`reservasi.php`), riwayat kode booking warga (`riwayat_pinjam.php`), serta pemantauan transaksi oleh Admin (`kelola_transaksi.php`).
-6. **Modul 6: Inspeksi Kondisi & Riwayat Aset (`modul6/`)**
-   - Mengawal transisi status peminjaman melalui pemeriksaan fisik Awal dan Akhir (`inspeksi.php`). Saat Inspeksi Akhir, sistem otomatis menghitung penambahan/penalti Skor Kepercayaan warga dan menerbitkan tiket servis otomatis apabila alat kembali dalam keadaan rusak, serta mencatat log audit (`riwayat_inspeksi.php`).
-7. **Modul 7: Meja Tiket Perbaikan / *Right-to-Repair* (`modul7/`)**
-   - Memfasilitasi warga melaporkan kerusakan barang elektronik/perkakas lengkap dengan foto kondisi dan pilihan metode pengecekan (`buat_tiket.php`).
-8. **Modul 8: Diagnosis Teknisi & Pelacakan Servis 6 Tahap (`modul8/`)**
-   - Menghadirkan pelacakan progres servis 6 tahap dan keputusan persetujuan/penolakan estimasi biaya oleh warga (`tiket_saya.php`), meja kerja klaim dan diagnosis bagi teknisi terverifikasi (`antrean_teknisi.php`), serta pemulihan otomatis status alat inventaris Hub yang selesai diservis (`kelola_tiket.php`).
-9. **Modul 9: Dashboard Dampak Sirkularitas SDGs (`modul9/dashboard.php`)**
-   - Menghitung secara dinamis menggunakan agregasi SQL (`SUM` dan `COUNT`) total penghematan finansial warga (Rp), total bobot *e-waste* yang dicegah (Kg), jumlah barang terselamatkan, jumlah peminjaman tuntas, serta grafik SVG perbandingan dampak per kategori.
+## 3. Struktur Direktori dan Fitur Sistem
+
+Seluruh halaman aplikasi dikelompokkan berdasarkan domain fitur (100% PHP Native prosedural modular tanpa framework):
+
+- **Root (`index.php`, `dashboard.php`):**
+  - `index.php`: Halaman beranda publik, ringkasan katalog, alur peminjaman/servis, serta etalase dampak sirkularitas Hub.
+  - `dashboard.php`: Dashboard analitik dampak sirkularitas SDGs (penghematan warga, berat *e-waste* yang dicegah, barang terselamatkan, peminjaman tuntas, serta grafik SVG per kategori) dan ringkasan peran pengguna.
+- **`auth/` (Autentikasi, Profil & Google OAuth):**
+  - `login.php`, `register.php`, `logout.php`, `google_login.php`, `google_callback.php`, `profil.php`.
+  - Mengelola registrasi warga/mitra, login email/Google, sesi pengguna, pembaruan profil, dan visualisasi Skor Kepercayaan Komunitas.
+- **`katalog/` (Katalog Publik & Jadwal Ketersediaan):**
+  - `index.php`: Katalog perkakas publik dengan pembersihan otomatis *Ghost Booking* dan filter tanggal kosong bebas bentrok.
+  - `detail_alat.php`: Spesifikasi perkakas, panduan keselamatan kerja kategori, dan kalender ketersediaan.
+- **`reservasi/` (Peminjaman Warga):**
+  - `reservasi.php`: Pengajuan reservasi dengan gerbang Skor Kepercayaan, persetujuan SOP keselamatan, dan transaksi SQL atomik anti-*double booking*.
+  - `riwayat_pinjam.php`: Riwayat transaksi peminjaman dan kode booking warga.
+- **`perbaikan/` (Layanan Perbaikan Mandiri / *Right-to-Repair*):**
+  - `buat_tiket.php`: Pelaporan kerusakan barang elektronik/perkakas lengkap dengan foto kondisi dan pilihan metode pengecekan.
+  - `tiket_saya.php`: Pelacakan progres servis 6 tahap serta persetujuan/penolakan estimasi biaya oleh warga.
+- **`mitra/` (Ruang Mitra Kontributor & Teknisi):**
+  - `aset_mitra.php`: Formulir penitipan dan pemantauan status aset titipan Mitra Kontributor.
+  - `antrean_teknisi.php`: Meja klaim tiket kerusakan, input diagnosis, estimasi biaya, dan pembaruan progres teknisi terverifikasi.
+- **`admin/` (Panel Administrasi Hub):**
+  - `kelola_user.php`: Manajemen pengguna dan verifikasi akun teknisi baru.
+  - `kelola_kategori.php`: CRUD master kategori alat, panduan keselamatan, bobot limbah (`rata_rata_berat_kg`), dan estimasi harga beli baru.
+  - `kelola_aset.php`: Manajemen inventaris perkakas Hub dan aktivasi alat titipan mitra.
+  - `kelola_transaksi.php`: Pemantauan transaksi peminjaman dan status pengembalian.
+  - `inspeksi.php` & `riwayat_inspeksi.php`: Inspeksi kondisi Awal dan Akhir (penghitungan otomatis Skor Kepercayaan serta penerbitan tiket servis otomatis jika rusak) beserta log auditnya.
+  - `kelola_tiket.php`: Pengawasan tiket servis dan pemulihan otomatis status alat inventaris Hub setelah selesai diservis.
+- **`config/`, `includes/`, `assets/`, `database/`:**
+  - `config/`: Konfigurasi terpusat (`app.php`, `database.php`, `google.php`, serta templat `config.example.php` / `google.example.php`).
+  - `includes/`: Komponen layout bersama (`header.php`, `sidebar.php`, `footer.php`, `functions.php`).
+  - `assets/`: Aset statis lokal (`css/pinjamkarya-ui.css`, `js/pinjamkarya.js`, gambar, dan direktori unggahan).
+  - `database/pinjamkarya.sql`: Skema tabel relasional dan *seed data* awal.
 
 ---
 
@@ -48,22 +63,25 @@ Banyak keluarga dan pelaku UMKM membutuhkan perkakas kerja atau peralatan produk
 - **Basis Data:** MySQL / MariaDB (InnoDB Relational Schema dengan Foreign Key Constraints).
 - **Frontend Styling:** 100% Pure Vanilla CSS3 Lokal (`assets/css/pinjamkarya-ui.css`) menggunakan CSS Custom Properties (`:root`), CSS Grid, dan Flexbox tanpa framework CSS eksternal dan tanpa CDN.
 - **Interaktivitas:** 100% Pure Vanilla JavaScript ES6+ Lokal (`assets/js/pinjamkarya.js`) tanpa library pihak ketiga.
-- **Visual & Grafik:** Pure Inline SVG Icons & Native SVG Bar Chart (`includes/functions.php` & `modul9/dashboard.php`).
+- **Visual & Grafik:** Pure Inline SVG Icons & Native SVG Bar Chart (`includes/functions.php` & `dashboard.php`).
 
 ---
 
-## 5. Panduan Instalasi dan Konfigurasi Lokal
+## 5. Panduan Instalasi dan Konfigurasi Terpusat (Lokal & Hosting)
 1. **Salin Direktori Proyek:**
-   Tempatkan folder `pinjamkarya` di dalam direktori web server lokal Anda, misalnya `C:\xampp\htdocs\pinjamkarya` atau `C:\xampp2\htdocs\pinjamkarya`.
+   Tempatkan folder `pinjamkarya` di root dokumen web server lokal (misalnya `C:\xampp\htdocs\pinjamkarya` atau `/opt/lampp/htdocs/pinjamkarya`) atau di `public_html` server hosting.
 2. **Nyalakan Layanan Web Server & Database:**
-   Buka XAMPP Control Panel, lalu jalankan modul **Apache** dan **MySQL**.
+   Jalankan layanan **Apache** dan **MySQL/MariaDB** (XAMPP/LAMPP atau hosting Anda).
 3. **Impor Basis Data & Data Awal (*Seed Data*):**
-   - Buka `http://localhost/phpmyadmin` di peramban Anda.
+   - Buka `http://localhost/phpmyadmin` (atau panel database hosting).
    - Pilih tab **Import**, unggah file `database/pinjamkarya.sql`, lalu tekan **Import / Go**.
-   - Skrip tersebut akan otomatis membuat database `db_pinjamkarya`, 6 tabel relasional, serta data awal siap uji coba.
-4. **Sesuaikan Konfigurasi Koneksi (Opsional):**
-   - Periksa `config/database.php` (default: host `localhost`, user `root`, password `""`, database `db_pinjamkarya`).
-   - Periksa `config/app.php` pada konstanta `BASE_URL` (default: `http://localhost/pinjamkarya`).
+   - Skrip tersebut otomatis membuat database `pinjamkarya`, 6 tabel relasional, serta data awal siap uji coba.
+4. **Konfigurasi Terpusat (Opsional untuk Lokal, Wajib untuk Produksi/Hosting):**
+   - Salin `config/config.example.php` menjadi `config/config.local.php` (sudah diabaikan oleh `.gitignore`).
+   - Sesuaikan array `database` (`host`, `port`, `user`, `pass`, `name`, `charset`), `app` (`base_url`, `timezone`, `debug`), dan `google` (`client_id`, `client_secret`, `redirect_uri`).
+   - Biarkan `app.base_url` dan `google.redirect_uri` kosong (`''`) agar aplikasi mendeteksi otomatis URL aktif dari protokol, host, dan subfolder.
+   - Pada server produksi/VPS, konfigurasi juga dapat di-override lewat environment variables (`APP_BASE_URL`, `APP_TIMEZONE`, `APP_DEBUG`, `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, `DB_NAME`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`).
+   - Akses langsung ke `config/`, `includes/`, `database/`, serta file sensitif (`*.sql`, `*.local.php`, `*.example.php`, dotfiles) diblokir melalui `.htaccess`.
 
 ---
 
@@ -71,7 +89,7 @@ Banyak keluarga dan pelaku UMKM membutuhkan perkakas kerja atau peralatan produk
 Buka peramban dan akses alamat:
 `http://localhost/pinjamkarya/`
 
-Pada halaman **Masuk Akun (`modul1/login.php`)**, Anda juga dapat langsung mengeklik tombol **Akun Uji Coba Cepat** untuk mengisi email dan kata sandi secara otomatis:
+Pada halaman **Masuk Akun (`auth/login.php`)**, Anda juga dapat langsung mengeklik tombol **Akun Uji Coba Cepat** untuk mengisi email dan kata sandi secara otomatis:
 
 | Peran Pengguna | Nama Akun | Email Login | Kata Sandi | Keterangan Pengujian |
 | :--- | :--- | :--- | :--- | :--- |

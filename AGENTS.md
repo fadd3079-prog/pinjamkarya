@@ -4,6 +4,12 @@ Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-s
 
 *Tradeoff:* These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
+## Project Stack (Permanent Rule)
+
+- **Zero Framework & Zero Library:** Project ini menggunakan **100% PHP Native** (modular procedural, `mysqli`) tanpa framework sama sekali (tidak memakai Laravel, CodeIgniter, Symfony, Composer, dll.).
+- Frontend juga menggunakan **Vanilla CSS3** (`assets/css/pinjamkarya-ui.css`), **Vanilla JS ES6+** (`assets/js/pinjamkarya.js`), dan inline SVG lokal tanpa framework/CDN eksternal.
+- Jangan pernah memperkenalkan dependency framework, Composer, npm, atau CDN eksternal saat memodifikasi atau menambah fitur di project ini.
+
 ## 1. Think Before Coding
 
 *Don't assume. Don't hide confusion. Surface tradeoffs.*

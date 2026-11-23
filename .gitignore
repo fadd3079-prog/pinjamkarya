@@ -1,0 +1,47 @@
+# Konfigurasi & rahasia lokal
+config/*.local.php
+.env
+.env.*
+!.env.example
+
+# Unggahan runtime media (pertahankan direktori via .gitkeep)
+assets/uploads/alat/*
+!assets/uploads/alat/.gitkeep
+assets/uploads/tiket/*
+!assets/uploads/tiket/.gitkeep
+
+# Log, cache, & berkas sementara PHP/server
+*.log
+*.tmp
+*.bak
+*.cache
+.phpunit.result.cache
+error_log
+php_errors.log
+
+# Hasil pengujian & utilitas lokal
+playwright-report/
+test-results/
+.playwright*
+anti-slop/
+skills/
+
+# Dependensi (tidak digunakan di stack PHP native)
+vendor/
+node_modules/
+
+# Editor, IDE, tooling, & sistem operasi
+.vscode/
+.idea/
+.fleet/
+.claude/
+.gemini/
+*.swp
+*.swo
+*~
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+Desktop.ini
