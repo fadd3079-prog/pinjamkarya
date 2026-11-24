@@ -1,4 +1,15 @@
 <?php
+/**
+ * Halaman alat titipan Mitra Kontributor.
+ *
+ * Tujuan : Memungkinkan Mitra mengajukan unit alat baru, memantau status
+ *          verifikasinya, dan melihat riwayat peminjaman alat miliknya.
+ * Akses  : Mitra Kontributor Alat (role 'mitra' + is_kontributor).
+ * Alur   : POST -> validasi isian & kontak -> unggah foto -> simpan sebagai
+ *          "Menunggu Verifikasi" -> flash + redirect. GET memuat daftar alat
+ *          dan riwayat peminjaman terakhir.
+ */
+
 require_once dirname(__DIR__) . '/config/app.php';
 require_role(['mitra']);
 refresh_user_session($conn);
@@ -12,15 +23,17 @@ if (empty($_SESSION['user']['is_kontributor'])) {
 $id_mitra = (int)$_SESSION['user']['id_user'];
 $modal_fb = null;
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $id_kategori = (int)($_POST['id_kategori'] ?? 0);
-    $nama_alat = trim($_POST['nama_alat'] ?? '');
-    $deskripsi = trim($_POST['deskripsi'] ?? '');
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verify_csrf_token()) {
+    set_flash('danger', 'Sesi formulir kedaluwarsa. Silakan muat ulang halaman.');
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $id_kategori     = (int)($_POST['id_kategori'] ?? 0);
+    $nama_alat       = trim($_POST['nama_alat'] ?? '');
+    $deskripsi       = trim($_POST['deskripsi'] ?? '');
     $harga_beli_baru = (float)($_POST['harga_beli_baru'] ?? 0);
     $biaya_perawatan = (float)($_POST['biaya_perawatan'] ?? 0);
     $max_hari_pinjam = max(1, (int)($_POST['max_hari_pinjam'] ?? 3));
-    $min_skor = max(50, (int)($_POST['min_skor'] ?? 70));
-    $status_awal = 'Menunggu Verifikasi';
+    $min_skor        = max(50, (int)($_POST['min_skor'] ?? 70));
+    $status_awal     = 'Menunggu Verifikasi';
 
     if ($nama_alat === '' || $deskripsi === '' || $id_kategori <= 0 || $harga_beli_baru <= 0) {
         $modal_fb = ['type' => 'warning', 'message' => 'Mohon lengkapi nama alat, kategori, harga baru, dan deskripsi.'];
@@ -30,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $modal_fb = ['type' => 'warning', 'message' => $kontak_res['message']];
         } else {
             $foto_filename = 'default_alat.jpg';
-            $upload_ok = true;
+            $upload_ok     = true;
             if (isset($_FILES['foto_alat']) && $_FILES['foto_alat']['error'] !== UPLOAD_ERR_NO_FILE) {
                 $up = upload_gambar($_FILES['foto_alat'], UPLOAD_ALAT_PATH, 'mitra_');
                 if (!$up['success']) {
@@ -56,29 +69,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $modal_open = ($modal_fb !== null) || isset($_GET['open']);
-$form_val = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : [];
+$form_val   = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : [];
 
-$res_kat = mysqli_query($conn, 'SELECT id_kategori, nama_kategori FROM kategori_alat ORDER BY nama_kategori ASC');
+$kategori_options = pk_stmt_all($conn, 'SELECT id_kategori, nama_kategori FROM kategori_alat ORDER BY nama_kategori ASC');
 
-$stmt_list = mysqli_prepare($conn, "SELECT a.*, k.nama_kategori,
-    (SELECT COUNT(*) FROM peminjaman p WHERE p.id_alat = a.id_alat AND p.status_peminjaman = 'Selesai') AS total_dipinjam
-    FROM aset_alat a
-    JOIN kategori_alat k ON a.id_kategori = k.id_kategori
-    WHERE a.id_pemilik = ?
-    ORDER BY a.id_alat DESC");
-mysqli_stmt_bind_param($stmt_list, 'i', $id_mitra);
-mysqli_stmt_execute($stmt_list);
-$res_mitra_alat = mysqli_stmt_get_result($stmt_list);
+$mitra_alat_list = pk_stmt_all(
+    $conn,
+    "SELECT a.*, k.nama_kategori,
+        (SELECT COUNT(*) FROM peminjaman p WHERE p.id_alat = a.id_alat AND p.status_peminjaman = 'Selesai') AS total_dipinjam
+     FROM aset_alat a
+     JOIN kategori_alat k ON a.id_kategori = k.id_kategori
+     WHERE a.id_pemilik = ?
+     ORDER BY a.id_alat DESC",
+    'i',
+    [$id_mitra]
+);
 
-$stmt_hist = mysqli_prepare($conn, "SELECT p.*, a.nama_alat, u.nama AS nama_peminjam
-    FROM peminjaman p
-    JOIN aset_alat a ON p.id_alat = a.id_alat
-    JOIN users u ON p.id_warga = u.id_user
-    WHERE a.id_pemilik = ?
-    ORDER BY p.created_at DESC LIMIT 10");
-mysqli_stmt_bind_param($stmt_hist, 'i', $id_mitra);
-mysqli_stmt_execute($stmt_hist);
-$res_hist = mysqli_stmt_get_result($stmt_hist);
+$hist_list = pk_stmt_all(
+    $conn,
+    "SELECT p.*, a.nama_alat, u.nama AS nama_peminjam
+     FROM peminjaman p
+     JOIN aset_alat a ON p.id_alat = a.id_alat
+     JOIN users u ON p.id_warga = u.id_user
+     WHERE a.id_pemilik = ?
+     ORDER BY p.created_at DESC LIMIT 10",
+    'i',
+    [$id_mitra]
+);
 
 $page_title = 'Alat Titipan Saya';
 require_once ROOT_PATH . '/includes/header.php';
@@ -106,7 +123,7 @@ require_once ROOT_PATH . '/includes/header.php';
         </h2>
     </div>
 
-    <?php if (mysqli_num_rows($res_mitra_alat) === 0): ?>
+    <?php if (count($mitra_alat_list) === 0): ?>
         <div class="pk-empty-state">
             <div class="pk-empty-icon"><?= svg_icon('box', 22) ?></div>
             <h3>Belum Ada Alat Titipan</h3>
@@ -123,7 +140,7 @@ require_once ROOT_PATH . '/includes/header.php';
                     </tr>
                 </thead>
                 <tbody>
-                    <?php while ($a = mysqli_fetch_assoc($res_mitra_alat)): ?>
+                    <?php foreach ($mitra_alat_list as $a): ?>
                         <tr>
                             <td class="pk-td-head">
                                 <div class="pk-td-head-row">
@@ -140,7 +157,7 @@ require_once ROOT_PATH . '/includes/header.php';
                             <td class="pk-desktop-cell" data-label="Status"><?= badge_status_alat($a['status_alat']) ?></td>
                             <td data-label="Dipinjam"><strong><?= (int)$a['total_dipinjam'] ?>x</strong></td>
                         </tr>
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
                 </tbody>
             </table>
         </div>
@@ -155,7 +172,7 @@ require_once ROOT_PATH . '/includes/header.php';
         </h2>
     </div>
 
-    <?php if (mysqli_num_rows($res_hist) === 0): ?>
+    <?php if (count($hist_list) === 0): ?>
         <div class="pk-empty-state">
             <div class="text-muted">Belum ada transaksi peminjaman.</div>
         </div>
@@ -171,7 +188,7 @@ require_once ROOT_PATH . '/includes/header.php';
                     </tr>
                 </thead>
                 <tbody>
-                    <?php while ($h = mysqli_fetch_assoc($res_hist)): ?>
+                    <?php foreach ($hist_list as $h): ?>
                         <tr>
                             <td class="pk-td-head">
                                 <div class="pk-td-head-row">
@@ -189,7 +206,7 @@ require_once ROOT_PATH . '/includes/header.php';
                             <td data-label="Jadwal"><?= e(format_tanggal($h['tgl_mulai'])) ?> - <?= e(format_tanggal($h['tgl_selesai'])) ?></td>
                             <td class="pk-desktop-cell" data-label="Status"><?= badge_status_pinjam($h['status_peminjaman']) ?></td>
                         </tr>
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
                 </tbody>
             </table>
         </div>
@@ -218,6 +235,7 @@ require_once ROOT_PATH . '/includes/header.php';
         <?php endif; ?>
 
         <form method="post" action="<?= BASE_URL ?>/mitra/aset_mitra.php" enctype="multipart/form-data">
+            <?= csrf_field() ?>
             <div class="pk-grid pk-grid--2">
                 <div class="form-group">
                     <label for="nama_alat" class="form-label">Nama &amp; Merek Alat</label>
@@ -228,11 +246,11 @@ require_once ROOT_PATH . '/includes/header.php';
                     <label for="id_kategori" class="form-label">Kategori</label>
                     <select id="id_kategori" name="id_kategori" class="form-select" required>
                         <option value="">Pilih Kategori</option>
-                        <?php while ($k = mysqli_fetch_assoc($res_kat)): ?>
+                        <?php foreach ($kategori_options as $k): ?>
                             <option value="<?= (int)$k['id_kategori'] ?>" <?= ((int)($form_val['id_kategori'] ?? 0) === (int)$k['id_kategori']) ? 'selected' : '' ?>>
                                 <?= e($k['nama_kategori']) ?>
                             </option>
-                        <?php endwhile; ?>
+                        <?php endforeach; ?>
                     </select>
                 </div>
             </div>
@@ -283,8 +301,4 @@ require_once ROOT_PATH . '/includes/header.php';
     </div>
 </div>
 
-<?php
-mysqli_stmt_close($stmt_list);
-mysqli_stmt_close($stmt_hist);
-require_once ROOT_PATH . '/includes/footer.php';
-?>
+<?php require_once ROOT_PATH . '/includes/footer.php'; ?>

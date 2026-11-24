@@ -1,11 +1,23 @@
 <?php
+/**
+ * Halaman riwayat peminjaman Warga.
+ *
+ * Tujuan : Menampilkan seluruh booking milik warga, ringkasan inspeksi awal/akhir,
+ *          serta memungkinkan pembatalan booking yang masih berstatus Dipesan.
+ * Akses  : Warga (role 'warga').
+ * Alur   : Aksi POST (dengan CSRF) cancel_booking -> update status -> redirect.
+ *          GET memuat booking beserta info inspeksi terbaru.
+ */
+
 require_once dirname(__DIR__) . '/config/app.php';
 require_role(['warga']);
 refresh_user_session($conn);
 
 $id_warga = (int)$_SESSION['user']['id_user'];
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'cancel_booking') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'cancel_booking' && !verify_csrf_token()) {
+    set_flash('danger', 'Sesi formulir kedaluwarsa. Silakan muat ulang halaman.');
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'cancel_booking') {
     $id_peminjaman = (int)($_POST['id_peminjaman'] ?? 0);
     $stmt = mysqli_prepare($conn, "UPDATE peminjaman SET status_peminjaman = 'Dibatalkan' WHERE id_peminjaman = ? AND id_warga = ? AND status_peminjaman = 'Dipesan'");
     mysqli_stmt_bind_param($stmt, 'ii', $id_peminjaman, $id_warga);
@@ -22,18 +34,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'cance
     exit;
 }
 
-$sql = "SELECT p.*, a.nama_alat, a.foto_alat, a.biaya_perawatan, k.nama_kategori,
+$pinjam_list = pk_stmt_all(
+    $conn,
+    "SELECT p.*, a.nama_alat, a.foto_alat, a.biaya_perawatan, k.nama_kategori,
         (SELECT CONCAT(i1.kondisi_fisik, ' : ', i1.catatan_inspeksi) FROM inspeksi_alat i1 WHERE i1.id_peminjaman = p.id_peminjaman AND i1.jenis_inspeksi = 'Awal' LIMIT 1) AS info_inspeksi_awal,
         (SELECT CONCAT(i2.kondisi_fisik, ' : ', i2.catatan_inspeksi) FROM inspeksi_alat i2 WHERE i2.id_peminjaman = p.id_peminjaman AND i2.jenis_inspeksi = 'Akhir' LIMIT 1) AS info_inspeksi_akhir
-        FROM peminjaman p
-        JOIN aset_alat a ON p.id_alat = a.id_alat
-        JOIN kategori_alat k ON a.id_kategori = k.id_kategori
-        WHERE p.id_warga = ?
-        ORDER BY p.id_peminjaman DESC";
-$stmt = mysqli_prepare($conn, $sql);
-mysqli_stmt_bind_param($stmt, 'i', $id_warga);
-mysqli_stmt_execute($stmt);
-$res_pinjam = mysqli_stmt_get_result($stmt);
+     FROM peminjaman p
+     JOIN aset_alat a ON p.id_alat = a.id_alat
+     JOIN kategori_alat k ON a.id_kategori = k.id_kategori
+     WHERE p.id_warga = ?
+     ORDER BY p.id_peminjaman DESC",
+    'i',
+    [$id_warga]
+);
 
 $page_title = 'Pinjaman Saya';
 require_once ROOT_PATH . '/includes/header.php';
@@ -47,7 +60,7 @@ require_once ROOT_PATH . '/includes/header.php';
     </a>
 </div>
 
-<?php if (mysqli_num_rows($res_pinjam) === 0): ?>
+<?php if (count($pinjam_list) === 0): ?>
     <div class="pk-empty-state">
         <div class="pk-empty-icon"><?= svg_icon('calendar', 22) ?></div>
         <h3>Belum Ada Pinjaman</h3>
@@ -57,7 +70,7 @@ require_once ROOT_PATH . '/includes/header.php';
     </div>
 <?php else: ?>
     <div class="pk-grid pk-grid--2">
-        <?php while ($row = mysqli_fetch_assoc($res_pinjam)): ?>
+        <?php foreach ($pinjam_list as $row): ?>
             <article class="pk-card d-flex flex-column justify-between mb-0">
                 <div>
                     <div class="d-flex align-center justify-between flex-wrap gap-2 mb-2">
@@ -94,6 +107,7 @@ require_once ROOT_PATH . '/includes/header.php';
                 <div>
                     <?php if ($row['status_peminjaman'] === 'Dipesan'): ?>
                         <form method="post" action="<?= BASE_URL ?>/reservasi/riwayat_pinjam.php" data-confirm="Batalkan pesanan <?= e($row['kode_booking']) ?>?" data-confirm-title="Batalkan Pesanan" data-confirm-btn="Batalkan" data-confirm-tone="danger">
+                            <?= csrf_field() ?>
                             <input type="hidden" name="action" value="cancel_booking">
                             <input type="hidden" name="id_peminjaman" value="<?= (int)$row['id_peminjaman'] ?>">
                             <button type="submit" class="btn btn-danger w-100">
@@ -106,11 +120,8 @@ require_once ROOT_PATH . '/includes/header.php';
                     <?php endif; ?>
                 </div>
             </article>
-        <?php endwhile; ?>
+        <?php endforeach; ?>
     </div>
 <?php endif; ?>
 
-<?php
-mysqli_stmt_close($stmt);
-require_once ROOT_PATH . '/includes/footer.php';
-?>
+<?php require_once ROOT_PATH . '/includes/footer.php'; ?>

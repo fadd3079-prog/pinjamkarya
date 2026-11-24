@@ -1,30 +1,43 @@
 <?php
+/**
+ * Halaman meja kerja Mitra Teknisi.
+ *
+ * Tujuan : Menampilkan antrean tiket terbuka, memungkinkan teknisi terverifikasi
+ *          mengklaim tiket & mengirim diagnosis, serta menandai pekerjaan siap diambil.
+ * Akses  : Mitra Teknisi Perbaikan (role 'mitra' + is_teknisi).
+ * Alur   : Aksi POST (claim_and_diagnose/mark_ready) -> update tiket -> flash +
+ *          redirect. GET memuat antrean terbuka dan pekerjaan milik teknisi.
+ */
+
 require_once dirname(__DIR__) . '/config/app.php';
 require_role(['mitra']);
 refresh_user_session($conn);
 
-$user = $_SESSION['user'];
+$user        = $_SESSION['user'];
 if (empty($user['is_teknisi'])) {
     set_flash('warning', 'Meja Kerja Teknisi khusus untuk Mitra Teknisi Perbaikan.');
     header('Location: ' . BASE_URL . '/auth/profil.php');
     exit;
 }
 
-$id_teknisi = (int)$user['id_user'];
+$id_teknisi  = (int)$user['id_user'];
 $is_verified = !empty($user['is_verified_teknisi']);
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $is_verified) {
-    $action = $_POST['action'] ?? '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $is_verified && !verify_csrf_token()) {
+    set_flash('danger', 'Sesi formulir kedaluwarsa. Silakan muat ulang halaman.');
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && $is_verified) {
+    $action   = $_POST['action'] ?? '';
     $id_tiket = (int)($_POST['id_tiket'] ?? 0);
 
     if ($action === 'claim_and_diagnose') {
         $diagnosis_teknisi = trim($_POST['diagnosis_teknisi'] ?? '');
-        $estimasi_biaya = (float)($_POST['estimasi_biaya'] ?? -1);
-        $estimasi_hari = (int)($_POST['estimasi_hari'] ?? 0);
+        $estimasi_biaya    = (float)($_POST['estimasi_biaya'] ?? -1);
+        $estimasi_hari     = (int)($_POST['estimasi_hari'] ?? 0);
 
         if ($diagnosis_teknisi === '' || $estimasi_biaya < 0 || $estimasi_hari <= 0) {
             set_flash('warning', 'Isi diagnosis, estimasi biaya, dan estimasi hari pengerjaan.');
         } else {
+            // Klaim hanya berhasil bila tiket masih terbuka dan belum dipegang teknisi lain.
             $stmt = mysqli_prepare($conn, "UPDATE tiket_perbaikan
                 SET id_teknisi = ?, diagnosis_teknisi = ?, estimasi_biaya = ?, estimasi_hari = ?, status_tiket = 'Menunggu Persetujuan'
                 WHERE id_tiket = ? AND id_teknisi IS NULL AND status_tiket = 'Menunggu Diagnosis'");
@@ -44,6 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $is_verified) {
     }
 
     if ($action === 'mark_ready') {
+        // Hanya tiket milik teknisi ini yang sudah disetujui warga boleh ditandai siap.
         $stmt = mysqli_prepare($conn, "UPDATE tiket_perbaikan
             SET status_tiket = 'Siap Diambil'
             WHERE id_tiket = ? AND id_teknisi = ? AND status_tiket = 'Dikerjakan' AND persetujuan_warga = 1");
@@ -62,29 +76,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $is_verified) {
     }
 }
 
-$res_open = null;
-$res_myjobs = null;
-$stmt_jobs = null;
+$open_tickets = [];
+$my_jobs      = [];
 
 if ($is_verified) {
-    $sql_open = "SELECT t.*, k.nama_kategori, u.nama AS nama_pelapor, u.no_hp, u.alamat
-                 FROM tiket_perbaikan t
-                 JOIN kategori_alat k ON t.id_kategori = k.id_kategori
-                 JOIN users u ON t.id_pelapor = u.id_user
-                 WHERE t.status_tiket = 'Menunggu Diagnosis' AND t.id_teknisi IS NULL
-                 ORDER BY t.id_tiket ASC";
-    $res_open = mysqli_query($conn, $sql_open);
+    $open_tickets = pk_stmt_all(
+        $conn,
+        "SELECT t.*, k.nama_kategori, u.nama AS nama_pelapor, u.no_hp, u.alamat
+         FROM tiket_perbaikan t
+         JOIN kategori_alat k ON t.id_kategori = k.id_kategori
+         JOIN users u ON t.id_pelapor = u.id_user
+         WHERE t.status_tiket = 'Menunggu Diagnosis' AND t.id_teknisi IS NULL
+         ORDER BY t.id_tiket ASC"
+    );
 
-    $sql_jobs = "SELECT t.*, k.nama_kategori, u.nama AS nama_pelapor, u.no_hp, u.alamat
-                 FROM tiket_perbaikan t
-                 JOIN kategori_alat k ON t.id_kategori = k.id_kategori
-                 JOIN users u ON t.id_pelapor = u.id_user
-                 WHERE t.id_teknisi = ?
-                 ORDER BY FIELD(t.status_tiket, 'Dikerjakan', 'Menunggu Persetujuan', 'Siap Diambil', 'Selesai', 'Dibatalkan'), t.id_tiket DESC";
-    $stmt_jobs = mysqli_prepare($conn, $sql_jobs);
-    mysqli_stmt_bind_param($stmt_jobs, 'i', $id_teknisi);
-    mysqli_stmt_execute($stmt_jobs);
-    $res_myjobs = mysqli_stmt_get_result($stmt_jobs);
+    $my_jobs = pk_stmt_all(
+        $conn,
+        "SELECT t.*, k.nama_kategori, u.nama AS nama_pelapor, u.no_hp, u.alamat
+         FROM tiket_perbaikan t
+         JOIN kategori_alat k ON t.id_kategori = k.id_kategori
+         JOIN users u ON t.id_pelapor = u.id_user
+         WHERE t.id_teknisi = ?
+         ORDER BY FIELD(t.status_tiket, 'Dikerjakan', 'Menunggu Persetujuan', 'Siap Diambil', 'Selesai', 'Dibatalkan'), t.id_tiket DESC",
+        'i',
+        [$id_teknisi]
+    );
 }
 
 $active_tab = ($_GET['tab'] ?? 'open') === 'myjobs' ? 'myjobs' : 'open';
@@ -107,8 +123,8 @@ require_once ROOT_PATH . '/includes/header.php';
     </section>
 <?php else: ?>
     <?php
-    $cnt_open = mysqli_num_rows($res_open);
-    $cnt_jobs = mysqli_num_rows($res_myjobs);
+    $cnt_open = count($open_tickets);
+    $cnt_jobs = count($my_jobs);
     ?>
     <div class="pk-tabs" role="tablist" aria-label="Meja Kerja Teknisi">
         <button type="button"
@@ -137,7 +153,7 @@ require_once ROOT_PATH . '/includes/header.php';
                 <h3>Tidak Ada Antrean Tiket Terbuka</h3>
             </div>
         <?php else: ?>
-            <?php while ($t = mysqli_fetch_assoc($res_open)): ?>
+            <?php foreach ($open_tickets as $t): ?>
                 <article class="pk-card mb-4">
                     <div class="pk-card-header">
                         <div class="d-flex align-center gap-2 flex-wrap">
@@ -180,6 +196,7 @@ require_once ROOT_PATH . '/includes/header.php';
                         <div class="pk-card mb-0">
                             <h3 class="mb-2">Klaim &amp; Kirim Diagnosis</h3>
                             <form method="post" action="<?= BASE_URL ?>/mitra/antrean_teknisi.php">
+                                <?= csrf_field() ?>
                                 <input type="hidden" name="action" value="claim_and_diagnose">
                                 <input type="hidden" name="id_tiket" value="<?= (int)$t['id_tiket'] ?>">
 
@@ -208,7 +225,7 @@ require_once ROOT_PATH . '/includes/header.php';
                         </div>
                     </div>
                 </article>
-            <?php endwhile; ?>
+            <?php endforeach; ?>
         <?php endif; ?>
     </div>
 
@@ -233,7 +250,7 @@ require_once ROOT_PATH . '/includes/header.php';
                             </tr>
                         </thead>
                         <tbody>
-                            <?php while ($job = mysqli_fetch_assoc($res_myjobs)): ?>
+                            <?php foreach ($my_jobs as $job): ?>
                                 <?php $has_job_action = ($job['status_tiket'] === 'Dikerjakan' && (int)$job['persetujuan_warga'] === 1); ?>
                                 <tr>
                                     <td class="pk-td-head">
@@ -267,6 +284,7 @@ require_once ROOT_PATH . '/includes/header.php';
                                     <td class="pk-td-actions<?= $has_job_action ? '' : ' is-empty' ?>">
                                         <?php if ($job['status_tiket'] === 'Dikerjakan' && (int)$job['persetujuan_warga'] === 1): ?>
                                             <form method="post" action="<?= BASE_URL ?>/mitra/antrean_teknisi.php" data-confirm="Tandai perbaikan <?= e($job['kode_tiket']) ?> siap diambil?" data-confirm-title="Siap Diambil" data-confirm-btn="Tandai Siap" data-confirm-tone="ok">
+                                                <?= csrf_field() ?>
                                                 <input type="hidden" name="action" value="mark_ready">
                                                 <input type="hidden" name="id_tiket" value="<?= (int)$job['id_tiket'] ?>">
                                                 <button type="submit" class="btn btn-secondary">
@@ -283,7 +301,7 @@ require_once ROOT_PATH . '/includes/header.php';
                                         <?php endif; ?>
                                     </td>
                                 </tr>
-                            <?php endwhile; ?>
+                            <?php endforeach; ?>
                         </tbody>
                     </table>
                 </div>
@@ -292,9 +310,4 @@ require_once ROOT_PATH . '/includes/header.php';
     </div>
 <?php endif; ?>
 
-<?php
-if ($stmt_jobs) {
-    mysqli_stmt_close($stmt_jobs);
-}
-require_once ROOT_PATH . '/includes/footer.php';
-?>
+<?php require_once ROOT_PATH . '/includes/footer.php'; ?>

@@ -1,13 +1,25 @@
 <?php
+/**
+ * Halaman daftar tiket servis milik Warga.
+ *
+ * Tujuan : Menampilkan progres 6 tahap perbaikan dan menyediakan aksi warga
+ *          (setujui/tolak estimasi, batalkan tiket, konfirmasi selesai).
+ * Akses  : Warga (role 'warga').
+ * Alur   : Aksi POST (dengan CSRF) -> update status tiket -> redirect. GET memuat
+ *          tiket milik pelapor beserta nama teknisi dan merender stepper.
+ */
+
 require_once dirname(__DIR__) . '/config/app.php';
 require_role(['warga']);
 refresh_user_session($conn);
 
 $id_warga = (int)$_SESSION['user']['id_user'];
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['id_tiket'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['id_tiket']) && !verify_csrf_token()) {
+    set_flash('danger', 'Sesi formulir kedaluwarsa. Silakan muat ulang halaman.');
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['id_tiket'])) {
     $id_tiket = (int)$_POST['id_tiket'];
-    $action = $_POST['action'];
+    $action   = $_POST['action'];
 
     if ($action === 'approve_cost') {
         $stmt = mysqli_prepare($conn, "UPDATE tiket_perbaikan SET persetujuan_warga = 1, status_tiket = 'Dikerjakan' WHERE id_tiket = ? AND id_pelapor = ? AND status_tiket = 'Menunggu Persetujuan'");
@@ -19,6 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['id_
             set_flash('success', 'Estimasi biaya disetujui. Teknisi memulai pengerjaan.');
         }
     } elseif ($action === 'reject_cost') {
+        // Tolak estimasi: kosongkan diagnosis dan kembalikan tiket ke antrean terbuka.
         $stmt = mysqli_prepare($conn, "UPDATE tiket_perbaikan SET id_teknisi = NULL, diagnosis_teknisi = NULL, estimasi_biaya = 0.00, estimasi_hari = NULL, persetujuan_warga = 0, status_tiket = 'Menunggu Diagnosis' WHERE id_tiket = ? AND id_pelapor = ? AND status_tiket = 'Menunggu Persetujuan'");
         mysqli_stmt_bind_param($stmt, 'ii', $id_tiket, $id_warga);
         mysqli_stmt_execute($stmt);
@@ -51,18 +64,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['id_
     exit;
 }
 
-$sql = "SELECT t.*, k.nama_kategori, k.rata_rata_berat_kg, k.estimasi_harga_baru,
-               tek.nama AS nama_teknisi, tek.no_hp AS hp_teknisi
-        FROM tiket_perbaikan t
-        JOIN kategori_alat k ON t.id_kategori = k.id_kategori
-        LEFT JOIN users tek ON t.id_teknisi = tek.id_user
-        WHERE t.id_pelapor = ?
-        ORDER BY t.id_tiket DESC";
-$stmt = mysqli_prepare($conn, $sql);
-mysqli_stmt_bind_param($stmt, 'i', $id_warga);
-mysqli_stmt_execute($stmt);
-$res_tiket = mysqli_stmt_get_result($stmt);
+$tiket_list = pk_stmt_all(
+    $conn,
+    "SELECT t.*, k.nama_kategori, k.rata_rata_berat_kg, k.estimasi_harga_baru,
+            tek.nama AS nama_teknisi, tek.no_hp AS hp_teknisi
+     FROM tiket_perbaikan t
+     JOIN kategori_alat k ON t.id_kategori = k.id_kategori
+     LEFT JOIN users tek ON t.id_teknisi = tek.id_user
+     WHERE t.id_pelapor = ?
+     ORDER BY t.id_tiket DESC",
+    'i',
+    [$id_warga]
+);
 
+/**
+ * Memetakan status tiket ke metadata tahapan stepper 6 langkah.
+ *
+ * @param string $status Status tiket saat ini.
+ * @return array{done_until: int, current_stage: int, summary: string}
+ */
 function get_tahap_meta_tiket(string $status): array {
     switch ($status) {
         case 'Menunggu Diagnosis':
@@ -80,6 +100,12 @@ function get_tahap_meta_tiket(string $status): array {
     }
 }
 
+/**
+ * Merender markup stepper 6 tahap perbaikan berdasarkan status tiket.
+ *
+ * @param string $status Status tiket saat ini.
+ * @return string Markup HTML <ol class="pk-stepper"> atau alert pembatalan.
+ */
 function render_stepper_6_tahap(string $status): string {
     $steps = [
         1 => 'Lapor',
@@ -144,7 +170,7 @@ require_once ROOT_PATH . '/includes/header.php';
     </a>
 </div>
 
-<?php if (mysqli_num_rows($res_tiket) === 0): ?>
+<?php if (count($tiket_list) === 0): ?>
     <div class="pk-empty-state">
         <div class="pk-empty-icon"><?= svg_icon('wrench', 22) ?></div>
         <h3>Belum Ada Tiket Servis</h3>
@@ -153,7 +179,7 @@ require_once ROOT_PATH . '/includes/header.php';
         </div>
     </div>
 <?php else: ?>
-    <?php while ($t = mysqli_fetch_assoc($res_tiket)): ?>
+    <?php foreach ($tiket_list as $t): ?>
         <?php $tahap_meta = get_tahap_meta_tiket((string)$t['status_tiket']); ?>
         <article class="pk-card pk-ticket-card mb-4">
             <div class="pk-ticket-hero">
@@ -218,6 +244,7 @@ require_once ROOT_PATH . '/includes/header.php';
 
                         <div class="btn-group-wrap">
                             <form method="post" action="<?= BASE_URL ?>/perbaikan/tiket_saya.php">
+                                <?= csrf_field() ?>
                                 <input type="hidden" name="id_tiket" value="<?= (int)$t['id_tiket'] ?>">
                                 <input type="hidden" name="action" value="approve_cost">
                                 <button type="submit" class="btn btn-secondary">
@@ -227,6 +254,7 @@ require_once ROOT_PATH . '/includes/header.php';
                             </form>
 
                             <form method="post" action="<?= BASE_URL ?>/perbaikan/tiket_saya.php" data-confirm="Tolak estimasi biaya dan kembalikan tiket ke antrean?" data-confirm-title="Tolak Estimasi" data-confirm-btn="Tolak" data-confirm-tone="danger">
+                                <?= csrf_field() ?>
                                 <input type="hidden" name="id_tiket" value="<?= (int)$t['id_tiket'] ?>">
                                 <input type="hidden" name="action" value="reject_cost">
                                 <button type="submit" class="btn btn-muted">
@@ -258,6 +286,7 @@ require_once ROOT_PATH . '/includes/header.php';
                     <div class="btn-group-wrap mt-3">
                         <?php if ($can_cancel): ?>
                             <form method="post" action="<?= BASE_URL ?>/perbaikan/tiket_saya.php" data-confirm="Batalkan tiket perbaikan <?= e($t['kode_tiket']) ?>?" data-confirm-title="Batalkan Tiket" data-confirm-btn="Batalkan" data-confirm-tone="danger">
+                                <?= csrf_field() ?>
                                 <input type="hidden" name="id_tiket" value="<?= (int)$t['id_tiket'] ?>">
                                 <input type="hidden" name="action" value="cancel_ticket">
                                 <button type="submit" class="btn btn-danger">
@@ -269,6 +298,7 @@ require_once ROOT_PATH . '/includes/header.php';
 
                         <?php if ($can_confirm): ?>
                             <form method="post" action="<?= BASE_URL ?>/perbaikan/tiket_saya.php" data-confirm="Konfirmasi perbaikan <?= e($t['kode_tiket']) ?> sudah diterima?" data-confirm-title="Konfirmasi Selesai" data-confirm-btn="Selesai" data-confirm-tone="primary">
+                                <?= csrf_field() ?>
                                 <input type="hidden" name="id_tiket" value="<?= (int)$t['id_tiket'] ?>">
                                 <input type="hidden" name="action" value="confirm_done">
                                 <button type="submit" class="btn btn-primary">
@@ -281,10 +311,7 @@ require_once ROOT_PATH . '/includes/header.php';
                 <?php endif; ?>
             </div>
         </article>
-    <?php endwhile; ?>
+    <?php endforeach; ?>
 <?php endif; ?>
 
-<?php
-mysqli_stmt_close($stmt);
-require_once ROOT_PATH . '/includes/footer.php';
-?>
+<?php require_once ROOT_PATH . '/includes/footer.php'; ?>

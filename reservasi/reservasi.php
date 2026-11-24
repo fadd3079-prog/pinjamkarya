@@ -1,11 +1,22 @@
 <?php
+/**
+ * Halaman pembuatan reservasi peminjaman alat.
+ *
+ * Tujuan : Memvalidasi kelayakan skor, durasi, dan bentrok jadwal sebelum membuat
+ *          booking baru bagi Warga.
+ * Akses  : Warga (role 'warga').
+ * Alur   : Muat alat -> cek skor minimal -> POST (CSRF, tanggal, kontak, panduan)
+ *          -> hitung durasi -> kunci baris alat -> cek bentrok -> simpan booking
+ *          dalam transaksi -> redirect ke riwayat pinjam.
+ */
+
 require_once dirname(__DIR__) . '/config/app.php';
 require_role(['warga']);
 refresh_user_session($conn);
 bersihkan_ghost_booking($conn);
 
-$warga = $_SESSION['user'];
-$id_warga = (int)$warga['id_user'];
+$warga      = $_SESSION['user'];
+$id_warga   = (int)$warga['id_user'];
 $skor_warga = (int)$warga['skor_kredibilitas'];
 
 $id_alat = (int)($_GET['id_alat'] ?? ($_POST['id_alat'] ?? 0));
@@ -15,38 +26,40 @@ if ($id_alat <= 0) {
     exit;
 }
 
-$sql = "SELECT a.*, k.nama_kategori, k.panduan_keselamatan
-        FROM aset_alat a
-        JOIN kategori_alat k ON a.id_kategori = k.id_kategori
-        WHERE a.id_alat = ? LIMIT 1";
-$stmt = mysqli_prepare($conn, $sql);
-mysqli_stmt_bind_param($stmt, 'i', $id_alat);
-mysqli_stmt_execute($stmt);
-$alat = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
-mysqli_stmt_close($stmt);
+$alat = pk_stmt_one(
+    $conn,
+    "SELECT a.*, k.nama_kategori, k.panduan_keselamatan
+     FROM aset_alat a
+     JOIN kategori_alat k ON a.id_kategori = k.id_kategori
+     WHERE a.id_alat = ? LIMIT 1",
+    'i',
+    [$id_alat]
+);
 
-if (!$alat || in_array($alat['status_alat'], ['Menunggu Verifikasi', 'Perawatan'], true)) {
+if (empty($alat) || in_array($alat['status_alat'], ['Menunggu Verifikasi', 'Perawatan'], true)) {
     set_flash('danger', 'Unit perkakas sedang tidak tersedia untuk dipesan.');
     header('Location: ' . BASE_URL . '/katalog/index.php');
     exit;
 }
 
-$min_skor = (int)$alat['min_skor'];
-$max_hari = (int)$alat['max_hari_pinjam'];
-$skor_cukup = ($skor_warga >= $min_skor);
+$min_skor     = (int)$alat['min_skor'];
+$max_hari     = (int)$alat['max_hari_pinjam'];
+$skor_cukup   = ($skor_warga >= $min_skor);
 $selisih_skor = max(0, $min_skor - $skor_warga);
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verify_csrf_token()) {
+    set_flash('danger', 'Sesi formulir kedaluwarsa. Silakan muat ulang halaman.');
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$skor_cukup) {
         set_flash('danger', 'Skor Kepercayaan Anda (' . $skor_warga . ' poin) belum memenuhi syarat minimal (' . $min_skor . ' poin).');
         header('Location: ' . BASE_URL . '/reservasi/reservasi.php?id_alat=' . $id_alat);
         exit;
     }
 
-    $tgl_mulai = trim($_POST['tgl_mulai'] ?? '');
-    $tgl_selesai = trim($_POST['tgl_selesai'] ?? '');
+    $tgl_mulai      = trim($_POST['tgl_mulai'] ?? '');
+    $tgl_selesai    = trim($_POST['tgl_selesai'] ?? '');
     $setuju_panduan = !empty($_POST['setuju_panduan']) ? 1 : 0;
-    $today = date('Y-m-d');
+    $today          = date('Y-m-d');
 
     if ($tgl_mulai === '' || $tgl_selesai === '') {
         set_flash('warning', 'Tanggal mulai dan tanggal selesai wajib diisi.');
@@ -61,38 +74,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$kontak_res['ok']) {
             set_flash('warning', $kontak_res['message']);
         } else {
+            // Durasi inklusif: tanggal mulai dan selesai dihitung sebagai hari pinjam.
             $durasi_hari = (int)round((strtotime($tgl_selesai) - strtotime($tgl_mulai)) / 86400) + 1;
             if ($durasi_hari > $max_hari) {
                 set_flash('danger', 'Durasi peminjaman (' . $durasi_hari . ' hari) melebihi batas maksimal (' . $max_hari . ' hari).');
             } else {
                 mysqli_begin_transaction($conn);
                 try {
-                    $stmt_lock = mysqli_prepare($conn, 'SELECT status_alat FROM aset_alat WHERE id_alat = ? FOR UPDATE');
-                    mysqli_stmt_bind_param($stmt_lock, 'i', $id_alat);
-                    mysqli_stmt_execute($stmt_lock);
-                    $row_lock = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_lock));
-                    mysqli_stmt_close($stmt_lock);
+                    // Kunci baris aset agar dua reservasi tidak memesan unit yang sama bersamaan.
+                    $row_lock = pk_stmt_one($conn, 'SELECT status_alat FROM aset_alat WHERE id_alat = ? FOR UPDATE', 'i', [$id_alat]);
 
-                    if (!$row_lock || in_array($row_lock['status_alat'], ['Perawatan', 'Menunggu Verifikasi'], true)) {
+                    if (empty($row_lock) || in_array($row_lock['status_alat'], ['Perawatan', 'Menunggu Verifikasi'], true)) {
                         mysqli_rollback($conn);
                         set_flash('danger', 'Unit sedang dalam perawatan dan tidak dapat dipesan.');
                     } else {
                         $bentrok = cek_bentrok_jadwal($conn, $id_alat, $tgl_mulai, $tgl_selesai);
                         if ($bentrok > 0) {
-                            $stmt_max = mysqli_prepare($conn, "SELECT DATE_ADD(MAX(tgl_selesai), INTERVAL 1 DAY) AS tgl_kosong
-                                FROM peminjaman
-                                WHERE id_alat = ? AND status_peminjaman IN ('Dipesan', 'Dipinjam') AND tgl_selesai >= CURDATE()");
-                            mysqli_stmt_bind_param($stmt_max, 'i', $id_alat);
-                            mysqli_stmt_execute($stmt_max);
-                            $row_max = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_max));
-                            mysqli_stmt_close($stmt_max);
+                            // Tawarkan tanggal kosong terdekat setelah booking aktif terakhir.
+                            $row_max = pk_stmt_one(
+                                $conn,
+                                "SELECT DATE_ADD(MAX(tgl_selesai), INTERVAL 1 DAY) AS tgl_kosong
+                                 FROM peminjaman
+                                 WHERE id_alat = ? AND status_peminjaman IN ('Dipesan', 'Dipinjam') AND tgl_selesai >= CURDATE()",
+                                'i',
+                                [$id_alat]
+                            );
 
                             mysqli_rollback($conn);
                             $saran_tgl = !empty($row_max['tgl_kosong']) ? format_tanggal($row_max['tgl_kosong']) : format_tanggal($today);
                             set_flash('danger', 'Jadwal bentrok. Tanggal kosong terdekat: ' . $saran_tgl . '.');
                         } else {
                             $kode_booking = generate_kode_booking($conn);
-                            $status_awal = 'Dipesan';
+                            $status_awal  = 'Dipesan';
                             $stmt_ins = mysqli_prepare($conn, 'INSERT INTO peminjaman (kode_booking, id_alat, id_warga, tgl_mulai, tgl_selesai, setuju_panduan, status_peminjaman) VALUES (?, ?, ?, ?, ?, ?, ?)');
                             mysqli_stmt_bind_param($stmt_ins, 'siissis', $kode_booking, $id_alat, $id_warga, $tgl_mulai, $tgl_selesai, $setuju_panduan, $status_awal);
                             mysqli_stmt_execute($stmt_ins);
@@ -113,15 +126,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$stmt_j = mysqli_prepare($conn, "SELECT kode_booking, tgl_mulai, tgl_selesai, status_peminjaman
-    FROM peminjaman
-    WHERE id_alat = ? AND status_peminjaman IN ('Dipesan', 'Dipinjam') AND tgl_selesai >= CURDATE()
-    ORDER BY tgl_mulai ASC");
-mysqli_stmt_bind_param($stmt_j, 'i', $id_alat);
-mysqli_stmt_execute($stmt_j);
-$res_jadwal = mysqli_stmt_get_result($stmt_j);
+$jadwal_terisi = pk_stmt_all(
+    $conn,
+    "SELECT kode_booking, tgl_mulai, tgl_selesai, status_peminjaman
+     FROM peminjaman
+     WHERE id_alat = ? AND status_peminjaman IN ('Dipesan', 'Dipinjam') AND tgl_selesai >= CURDATE()
+     ORDER BY tgl_mulai ASC",
+    'i',
+    [$id_alat]
+);
 
-$default_mulai = $_POST['tgl_mulai'] ?? ($_GET['tgl_mulai'] ?? date('Y-m-d'));
+$default_mulai   = $_POST['tgl_mulai'] ?? ($_GET['tgl_mulai'] ?? date('Y-m-d'));
 $default_selesai = $_POST['tgl_selesai'] ?? ($_GET['tgl_selesai'] ?? date('Y-m-d', strtotime('+1 day')));
 
 $page_title = 'Reservasi Alat';
@@ -147,6 +162,7 @@ require_once ROOT_PATH . '/includes/header.php';
         </div>
 
         <form method="post" action="<?= BASE_URL ?>/reservasi/reservasi.php?id_alat=<?= (int)$alat['id_alat'] ?>">
+            <?= csrf_field() ?>
             <input type="hidden" name="id_alat" value="<?= (int)$alat['id_alat'] ?>">
 
             <div class="pk-grid pk-grid--2">
@@ -224,7 +240,7 @@ require_once ROOT_PATH . '/includes/header.php';
                 </h2>
             </div>
 
-            <?php if (mysqli_num_rows($res_jadwal) === 0): ?>
+            <?php if (count($jadwal_terisi) === 0): ?>
                 <div class="text-secondary fw-bold" style="padding:18px 20px;">Semua tanggal mulai hari ini tersedia.</div>
             <?php else: ?>
                 <div class="pk-table-scroll">
@@ -238,7 +254,7 @@ require_once ROOT_PATH . '/includes/header.php';
                             </tr>
                         </thead>
                         <tbody>
-                            <?php while ($j = mysqli_fetch_assoc($res_jadwal)): ?>
+                            <?php foreach ($jadwal_terisi as $j): ?>
                                 <tr>
                                     <td class="pk-td-head">
                                         <div class="pk-td-head-row">
@@ -250,7 +266,7 @@ require_once ROOT_PATH . '/includes/header.php';
                                     <td class="pk-nowrap" data-label="Selesai"><?= e(format_tanggal($j['tgl_selesai'])) ?></td>
                                     <td class="pk-desktop-cell" data-label="Status"><?= badge_status_pinjam($j['status_peminjaman']) ?></td>
                                 </tr>
-                            <?php endwhile; ?>
+                            <?php endforeach; ?>
                         </tbody>
                     </table>
                 </div>
@@ -259,7 +275,4 @@ require_once ROOT_PATH . '/includes/header.php';
     </div>
 </div>
 
-<?php
-mysqli_stmt_close($stmt_j);
-require_once ROOT_PATH . '/includes/footer.php';
-?>
+<?php require_once ROOT_PATH . '/includes/footer.php'; ?>

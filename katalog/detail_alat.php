@@ -1,4 +1,14 @@
 <?php
+/**
+ * Halaman detail unit perkakas.
+ *
+ * Tujuan : Menampilkan spesifikasi, panduan keselamatan, status, dan jadwal
+ *          peminjaman aktif sebuah alat, serta tautan pengajuan peminjaman.
+ * Akses  : Publik (warga maupun tamu).
+ * Alur   : Validasi ID -> muat alat & jadwal terisi -> susun URL reservasi ->
+ *          tampilkan detail atau redirect bila alat tidak ditemukan.
+ */
+
 require_once dirname(__DIR__) . '/config/app.php';
 
 bersihkan_ghost_booking($conn);
@@ -10,19 +20,19 @@ if ($id_alat <= 0) {
     exit;
 }
 
-$sql = "SELECT a.*, k.nama_kategori, k.panduan_keselamatan, k.rata_rata_berat_kg,
-               u.nama AS nama_pemilik, u.role AS role_pemilik
-        FROM aset_alat a
-        JOIN kategori_alat k ON a.id_kategori = k.id_kategori
-        JOIN users u ON a.id_pemilik = u.id_user
-        WHERE a.id_alat = ? LIMIT 1";
-$stmt = mysqli_prepare($conn, $sql);
-mysqli_stmt_bind_param($stmt, 'i', $id_alat);
-mysqli_stmt_execute($stmt);
-$alat = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
-mysqli_stmt_close($stmt);
+$alat = pk_stmt_one(
+    $conn,
+    "SELECT a.*, k.nama_kategori, k.panduan_keselamatan, k.rata_rata_berat_kg,
+            u.nama AS nama_pemilik, u.role AS role_pemilik
+     FROM aset_alat a
+     JOIN kategori_alat k ON a.id_kategori = k.id_kategori
+     JOIN users u ON a.id_pemilik = u.id_user
+     WHERE a.id_alat = ? LIMIT 1",
+    'i',
+    [$id_alat]
+);
 
-if (!$alat) {
+if (empty($alat)) {
     set_flash('danger', 'Unit perkakas tidak ditemukan.');
     header('Location: ' . BASE_URL . '/katalog/index.php');
     exit;
@@ -30,24 +40,21 @@ if (!$alat) {
 
 $is_tersedia = ($alat['status_alat'] === 'Tersedia');
 
-$sql_jadwal = "SELECT p.kode_booking, p.tgl_mulai, p.tgl_selesai, p.status_peminjaman, u.nama AS nama_peminjam
-               FROM peminjaman p
-               JOIN users u ON p.id_warga = u.id_user
-               WHERE p.id_alat = ?
-                 AND p.status_peminjaman IN ('Dipesan', 'Dipinjam')
-                 AND p.tgl_selesai >= CURDATE()
-               ORDER BY p.tgl_mulai ASC";
-$stmt_j = mysqli_prepare($conn, $sql_jadwal);
-mysqli_stmt_bind_param($stmt_j, 'i', $id_alat);
-mysqli_stmt_execute($stmt_j);
-$res_jadwal = mysqli_stmt_get_result($stmt_j);
-$jadwal_terisi = [];
-while ($j = mysqli_fetch_assoc($res_jadwal)) {
-    $jadwal_terisi[] = $j;
-}
-mysqli_stmt_close($stmt_j);
+// Ambil booking aktif yang belum selesai sebagai informasi jadwal terisi.
+$jadwal_terisi = pk_stmt_all(
+    $conn,
+    "SELECT p.kode_booking, p.tgl_mulai, p.tgl_selesai, p.status_peminjaman, u.nama AS nama_peminjam
+     FROM peminjaman p
+     JOIN users u ON p.id_warga = u.id_user
+     WHERE p.id_alat = ?
+       AND p.status_peminjaman IN ('Dipesan', 'Dipinjam')
+       AND p.tgl_selesai >= CURDATE()
+     ORDER BY p.tgl_mulai ASC",
+    'i',
+    [$id_alat]
+);
 
-$tgl_mulai_q = trim($_GET['tgl_mulai'] ?? '');
+$tgl_mulai_q   = trim($_GET['tgl_mulai'] ?? '');
 $tgl_selesai_q = trim($_GET['tgl_selesai'] ?? '');
 $reservasi_url = BASE_URL . '/reservasi/reservasi.php?id_alat=' . (int)$alat['id_alat'];
 if ($tgl_mulai_q !== '' && $tgl_selesai_q !== '') {

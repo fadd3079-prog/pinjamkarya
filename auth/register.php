@@ -1,4 +1,13 @@
 <?php
+/**
+ * Halaman pendaftaran akun baru (Warga/UMKM dan Mitra).
+ *
+ * Tujuan : Membuat akun pengguna baru beserta sub-peran Mitra (kontributor/teknisi).
+ * Akses  : Publik (pengguna yang sudah login dialihkan ke dashboard).
+ * Alur   : Validasi isian & sub-peran -> cek email unik -> simpan akun (skor awal
+ *          100) -> set sesi login -> redirect ke dashboard.
+ */
+
 require_once dirname(__DIR__) . '/config/app.php';
 
 if (isset($_SESSION['user'])) {
@@ -6,7 +15,9 @@ if (isset($_SESSION['user'])) {
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verify_csrf_token()) {
+    set_flash('danger', 'Sesi formulir kedaluwarsa. Silakan muat ulang halaman.');
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nama = trim($_POST['nama'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
@@ -28,14 +39,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($role === 'mitra' && $is_kontributor === 0 && $is_teknisi === 0) {
         set_flash('warning', 'Akun Mitra wajib memilih minimal satu sub-peran.');
     } else {
-        $chk = mysqli_prepare($conn, 'SELECT id_user FROM users WHERE email = ? LIMIT 1');
-        mysqli_stmt_bind_param($chk, 's', $email);
-        mysqli_stmt_execute($chk);
-        $chk_res = mysqli_stmt_get_result($chk);
-        $existing = mysqli_fetch_assoc($chk_res);
-        mysqli_stmt_close($chk);
+        $existing = pk_stmt_one($conn, 'SELECT id_user FROM users WHERE email = ? LIMIT 1', 's', [$email]);
 
-        if ($existing) {
+        if (!empty($existing)) {
             set_flash('danger', 'Alamat email sudah terdaftar.');
         } else {
             $hash = password_hash($password, PASSWORD_DEFAULT);
@@ -45,14 +51,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $new_user_id = (int)mysqli_insert_id($conn);
             mysqli_stmt_close($stmt);
 
-            $q_user = mysqli_prepare($conn, 'SELECT id_user, nama, email, no_hp, alamat, role, is_kontributor, is_teknisi, is_verified_teknisi, skor_kredibilitas, created_at FROM users WHERE id_user = ? LIMIT 1');
-            mysqli_stmt_bind_param($q_user, 'i', $new_user_id);
-            mysqli_stmt_execute($q_user);
-            $new_user = mysqli_fetch_assoc(mysqli_stmt_get_result($q_user));
-            mysqli_stmt_close($q_user);
+            $new_user = pk_stmt_one(
+                $conn,
+                'SELECT id_user, nama, email, no_hp, alamat, role, is_kontributor, is_teknisi, is_verified_teknisi, skor_kredibilitas, created_at FROM users WHERE id_user = ? LIMIT 1',
+                'i',
+                [$new_user_id]
+            );
 
             session_regenerate_id(true);
-            $_SESSION['user'] = $new_user ?: [
+            $_SESSION['user'] = !empty($new_user) ? $new_user : [
                 'id_user'             => $new_user_id,
                 'nama'                => $nama,
                 'email'               => $email,
@@ -94,6 +101,7 @@ require_once ROOT_PATH . '/includes/header.php';
     <?= get_flash() ?>
 
     <form method="post" action="<?= BASE_URL ?>/auth/register.php">
+        <?= csrf_field() ?>
         <div class="form-group">
             <label for="nama" class="form-label">Nama Lengkap</label>
             <input type="text" id="nama" name="nama" class="form-control" placeholder="Nama lengkap" value="<?= e($_POST['nama'] ?? '') ?>" required autofocus>

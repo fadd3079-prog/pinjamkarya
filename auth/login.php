@@ -1,4 +1,13 @@
 <?php
+/**
+ * Halaman masuk akun.
+ *
+ * Tujuan : Memvalidasi kredensial email & kata sandi lalu membuat sesi login.
+ * Akses  : Publik (pengguna yang sudah login dialihkan ke dashboard).
+ * Alur   : Cek sesi aktif -> verifikasi CSRF & kredensial -> set sesi -> redirect
+ *          ke dashboard. Form juga menyediakan pengisi cepat akun demo.
+ */
+
 require_once dirname(__DIR__) . '/config/app.php';
 
 if (isset($_SESSION['user'])) {
@@ -7,26 +16,26 @@ if (isset($_SESSION['user'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = trim($_POST['email'] ?? '');
-    $password = $_POST['password'] ?? '';
-
-    if ($email === '' || $password === '') {
-        set_flash('warning', 'Mohon isi alamat email dan kata sandi Anda.');
+    if (!verify_csrf_token()) {
+        set_flash('danger', 'Sesi formulir kedaluwarsa. Silakan muat ulang halaman.');
     } else {
-        $stmt = mysqli_prepare($conn, 'SELECT * FROM users WHERE email = ? LIMIT 1');
-        mysqli_stmt_bind_param($stmt, 's', $email);
-        mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        $user = mysqli_fetch_assoc($res);
-        mysqli_stmt_close($stmt);
+        $email    = trim($_POST['email'] ?? '');
+        $password = $_POST['password'] ?? '';
 
-        if ($user && password_verify($password, $user['password'])) {
-            unset($user['password']);
-            $_SESSION['user'] = $user;
-            set_flash('success', 'Selamat datang, ' . format_nama_pengguna((string)$user['nama']) . '.');
-            header('Location: ' . BASE_URL . '/dashboard.php');
-            exit;
+        if ($email === '' || $password === '') {
+            set_flash('warning', 'Mohon isi alamat email dan kata sandi Anda.');
         } else {
+            $user = pk_stmt_one($conn, 'SELECT * FROM users WHERE email = ? LIMIT 1', 's', [$email]);
+
+            // Password diverifikasi terhadap hash; kolom password tidak ikut disimpan di sesi.
+            if (!empty($user) && password_verify($password, $user['password'])) {
+                unset($user['password']);
+                $_SESSION['user'] = $user;
+                set_flash('success', 'Selamat datang, ' . format_nama_pengguna((string)$user['nama']) . '.');
+                header('Location: ' . BASE_URL . '/dashboard.php');
+                exit;
+            }
+
             set_flash('danger', 'Email atau kata sandi tidak sesuai.');
         }
     }
@@ -51,6 +60,7 @@ require_once ROOT_PATH . '/includes/header.php';
     <?= get_flash() ?>
 
     <form method="post" action="<?= BASE_URL ?>/auth/login.php">
+        <?= csrf_field() ?>
         <div class="form-group">
             <label for="email" class="form-label">Email</label>
             <input type="email" id="email" name="email" class="form-control" placeholder="nama@pinjamkarya.id" value="<?= e($_POST['email'] ?? '') ?>" required autocomplete="email" autofocus>
