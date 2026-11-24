@@ -63,6 +63,23 @@ mysqli_stmt_bind_param($stmt, 'i', $id_warga);
 mysqli_stmt_execute($stmt);
 $res_tiket = mysqli_stmt_get_result($stmt);
 
+function get_tahap_meta_tiket(string $status): array {
+    switch ($status) {
+        case 'Menunggu Diagnosis':
+            return ['done_until' => 1, 'current_stage' => 2, 'summary' => 'Tahap 2 dari 6 · Menunggu diagnosis'];
+        case 'Menunggu Persetujuan':
+            return ['done_until' => 2, 'current_stage' => 3, 'summary' => 'Tahap 3 dari 6 · Perlu persetujuan biaya'];
+        case 'Dikerjakan':
+            return ['done_until' => 3, 'current_stage' => 4, 'summary' => 'Tahap 4 dari 6 · Sedang dikerjakan'];
+        case 'Siap Diambil':
+            return ['done_until' => 4, 'current_stage' => 5, 'summary' => 'Tahap 5 dari 6 · Siap diambil'];
+        case 'Selesai':
+            return ['done_until' => 6, 'current_stage' => 0, 'summary' => '6 dari 6 tahap selesai'];
+        default:
+            return ['done_until' => 0, 'current_stage' => 0, 'summary' => 'Tiket dibatalkan'];
+    }
+}
+
 function render_stepper_6_tahap(string $status): string {
     $steps = [
         1 => 'Lapor',
@@ -74,45 +91,41 @@ function render_stepper_6_tahap(string $status): string {
     ];
 
     if ($status === 'Dibatalkan') {
-        return render_alert('danger', 'Tiket perbaikan dibatalkan.', false, '', 'mb-2');
+        return render_alert('danger', 'Tiket perbaikan dibatalkan.', false, '', 'mb-0');
     }
 
-    $current_stage = 2;
-    $done_until = 1;
-    switch ($status) {
-        case 'Menunggu Diagnosis':
-            $done_until = 1;
-            $current_stage = 2;
-            break;
-        case 'Menunggu Persetujuan':
-            $done_until = 2;
-            $current_stage = 3;
-            break;
-        case 'Dikerjakan':
-            $done_until = 3;
-            $current_stage = 4;
-            break;
-        case 'Siap Diambil':
-            $done_until = 4;
-            $current_stage = 5;
-            break;
-        case 'Selesai':
-            $done_until = 6;
-            $current_stage = 0;
-            break;
-    }
+    $meta = get_tahap_meta_tiket($status);
+    $done_until = $meta['done_until'];
+    $current_stage = $meta['current_stage'];
+    $is_warn_step = ($status === 'Menunggu Persetujuan');
 
     $html = '<ol class="pk-stepper" aria-label="Tahapan Perbaikan">';
     foreach ($steps as $num => $label) {
-        $cls = '';
+        $cls = 'is-upcoming';
+        $state_text = 'Menunggu';
+        $aria_current = '';
+
         if ($num <= $done_until) {
             $cls = 'is-done';
+            $state_text = 'Selesai';
         } elseif ($num === $current_stage) {
-            $cls = 'is-current';
+            $cls = 'is-current' . ($is_warn_step ? ' is-warn' : '');
+            $state_text = $is_warn_step ? 'Perlu Setuju' : 'Berjalan';
+            $aria_current = ' aria-current="step"';
         }
-        $html .= '<li class="pk-step ' . $cls . '">'
-               . '<span class="pk-step-num">' . $num . '</span>'
-               . '<span>' . e($label) . '</span>'
+
+        $next_done = ($num < 6 && $num < $done_until) || ($num === $done_until && $current_stage > 0) || ($done_until >= 6);
+        $prev_done = ($num > 1 && ($num - 1) <= $done_until);
+        $link_cls = ($prev_done ? ' has-prev-done' : '') . ($next_done ? ' has-next-done' : '');
+
+        $html .= '<li class="pk-step ' . $cls . $link_cls . '"' . $aria_current . '>'
+               . '<div class="pk-step-node">'
+               . '<span class="pk-step-num" aria-hidden="true">' . $num . '</span>'
+               . '</div>'
+               . '<div class="pk-step-body">'
+               . '<span class="pk-step-label">' . e($label) . '</span>'
+               . '<span class="pk-step-state">' . e($state_text) . '</span>'
+               . '</div>'
                . '</li>';
     }
     $html .= '</ol>';
@@ -141,88 +154,109 @@ require_once ROOT_PATH . '/includes/header.php';
     </div>
 <?php else: ?>
     <?php while ($t = mysqli_fetch_assoc($res_tiket)): ?>
-        <article class="pk-card mb-4">
-            <div class="pk-card-header">
-                <div class="d-flex align-center gap-2 flex-wrap">
-                    <span class="pk-code-tag"><?= e($t['kode_tiket']) ?></span>
-                    <span class="pk-tag"><?= e($t['nama_kategori']) ?></span>
-                    <span class="pk-tag"><?= e($t['metode_cek']) ?></span>
+        <?php $tahap_meta = get_tahap_meta_tiket((string)$t['status_tiket']); ?>
+        <article class="pk-card pk-ticket-card mb-4">
+            <div class="pk-ticket-hero">
+                <div class="pk-ticket-media">
+                    <img src="<?= e(get_gambar_tiket($t['foto_barang'], $t['nama_barang'])) ?>"
+                         alt="<?= e($t['nama_barang']) ?>"
+                         width="188"
+                         height="168"
+                         class="pk-ticket-thumb"
+                         loading="lazy">
                 </div>
-                <div class="d-flex align-center gap-2">
-                    <span class="text-muted" style="font-size:0.84rem;"><?= e(format_tanggal($t['created_at'])) ?></span>
-                    <?= badge_status_tiket($t['status_tiket']) ?>
+
+                <div class="pk-ticket-summary">
+                    <div class="pk-ticket-head">
+                        <div class="d-flex align-center gap-2 flex-wrap">
+                            <span class="pk-code-tag"><?= e($t['kode_tiket']) ?></span>
+                            <span class="pk-tag"><?= e($t['nama_kategori']) ?></span>
+                            <span class="pk-tag"><?= e($t['metode_cek']) ?></span>
+                        </div>
+                        <div class="d-flex align-center gap-2 flex-wrap">
+                            <span class="pk-ticket-date"><?= e(format_tanggal($t['created_at'])) ?></span>
+                            <?= badge_status_tiket($t['status_tiket']) ?>
+                        </div>
+                    </div>
+
+                    <h2 class="pk-ticket-title"><?= e($t['nama_barang']) ?></h2>
+                    <p class="pk-ticket-desc"><?= e($t['deskripsi_kerusakan']) ?></p>
+
+                    <div class="pk-ticket-tech">
+                        <strong>Teknisi:</strong>
+                        <?php if (!empty($t['nama_teknisi'])): ?>
+                            <span><?= e(format_nama_pengguna((string)$t['nama_teknisi'])) ?></span>
+                            <?php if (!empty($t['hp_teknisi'])): ?>
+                                <span class="text-muted">(<?= e($t['hp_teknisi']) ?>)</span>
+                            <?php endif; ?>
+                        <?php else: ?>
+                            <span class="text-muted">Menunggu klaim</span>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
 
-            <?= render_stepper_6_tahap($t['status_tiket']) ?>
-
-            <div class="pk-grid pk-grid--2 mt-3">
-                <div class="d-flex gap-3 align-start">
-                    <img src="<?= e(get_gambar_tiket($t['foto_barang'], $t['nama_barang'])) ?>"
-                         alt="<?= e($t['nama_barang']) ?>"
-                         width="120"
-                         height="84"
-                         class="pk-thumb-ticket">
-                    <div>
-                        <h2 class="mb-1"><?= e($t['nama_barang']) ?></h2>
-                        <div class="text-muted mb-2"><?= e($t['deskripsi_kerusakan']) ?></div>
-                        <div style="font-size:0.85rem;">
-                            <strong>Teknisi:</strong>
-                            <?php if (!empty($t['nama_teknisi'])): ?>
-                                <?= e($t['nama_teknisi']) ?> (<?= e($t['hp_teknisi']) ?>)
-                            <?php else: ?>
-                                <span class="text-muted">Menunggu klaim</span>
-                            <?php endif; ?>
-                        </div>
-                    </div>
+            <div class="pk-ticket-progress">
+                <div class="pk-ticket-progress-head">
+                    <span class="pk-ticket-progress-title">Tahapan Perbaikan</span>
+                    <span class="pk-ticket-progress-meta"><?= e($tahap_meta['summary']) ?></span>
                 </div>
+                <?= render_stepper_6_tahap($t['status_tiket']) ?>
+            </div>
 
-                <div>
-                    <?php if ($t['status_tiket'] === 'Menunggu Persetujuan'): ?>
-                        <div class="pk-card pk-card--notice mb-0">
-                            <h3 class="mb-2">Estimasi Teknisi</h3>
-                            <div class="mb-2"><?= e($t['diagnosis_teknisi']) ?></div>
-                            <div class="d-flex justify-between flex-wrap gap-2 mb-3">
+            <div class="pk-ticket-footer">
+                <?php if ($t['status_tiket'] === 'Menunggu Persetujuan'): ?>
+                    <div class="pk-card pk-card--notice mb-0">
+                        <div class="pk-ticket-diag-head">
+                            <h3>Estimasi Biaya Teknisi</h3>
+                            <div class="pk-ticket-diag-stats">
                                 <span>Biaya: <strong class="text-warm"><?= rupiah($t['estimasi_biaya']) ?></strong></span>
                                 <span>Durasi: <strong><?= (int)$t['estimasi_hari'] ?> Hari</strong></span>
                             </div>
-
-                            <div class="btn-group-wrap">
-                                <form method="post" action="<?= BASE_URL ?>/perbaikan/tiket_saya.php">
-                                    <input type="hidden" name="id_tiket" value="<?= (int)$t['id_tiket'] ?>">
-                                    <input type="hidden" name="action" value="approve_cost">
-                                    <button type="submit" class="btn btn-secondary">
-                                        <?= svg_icon('check-circle', 16) ?>
-                                        <span>Setujui Biaya</span>
-                                    </button>
-                                </form>
-
-                                <form method="post" action="<?= BASE_URL ?>/perbaikan/tiket_saya.php" data-confirm="Tolak estimasi biaya dan kembalikan tiket ke antrean?" data-confirm-title="Tolak Estimasi" data-confirm-btn="Tolak" data-confirm-tone="danger">
-                                    <input type="hidden" name="id_tiket" value="<?= (int)$t['id_tiket'] ?>">
-                                    <input type="hidden" name="action" value="reject_cost">
-                                    <button type="submit" class="btn btn-muted">
-                                        <span>Tolak Estimasi</span>
-                                    </button>
-                                </form>
-                            </div>
                         </div>
-                    <?php elseif (!empty($t['diagnosis_teknisi'])): ?>
-                        <div class="pk-guideline-box" style="white-space:normal;">
-                            <div class="fw-bold mb-1">Diagnosis &amp; Biaya:</div>
-                            <div class="mb-2"><?= e($t['diagnosis_teknisi']) ?></div>
-                            <div class="d-flex justify-between flex-wrap gap-2">
+                        <p class="mb-3"><?= e($t['diagnosis_teknisi']) ?></p>
+
+                        <div class="btn-group-wrap">
+                            <form method="post" action="<?= BASE_URL ?>/perbaikan/tiket_saya.php">
+                                <input type="hidden" name="id_tiket" value="<?= (int)$t['id_tiket'] ?>">
+                                <input type="hidden" name="action" value="approve_cost">
+                                <button type="submit" class="btn btn-secondary">
+                                    <?= svg_icon('check-circle', 16) ?>
+                                    <span>Setujui Biaya</span>
+                                </button>
+                            </form>
+
+                            <form method="post" action="<?= BASE_URL ?>/perbaikan/tiket_saya.php" data-confirm="Tolak estimasi biaya dan kembalikan tiket ke antrean?" data-confirm-title="Tolak Estimasi" data-confirm-btn="Tolak" data-confirm-tone="danger">
+                                <input type="hidden" name="id_tiket" value="<?= (int)$t['id_tiket'] ?>">
+                                <input type="hidden" name="action" value="reject_cost">
+                                <button type="submit" class="btn btn-muted">
+                                    <span>Tolak Estimasi</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                <?php elseif (!empty($t['diagnosis_teknisi'])): ?>
+                    <div class="pk-guideline-box pk-ticket-diag-box" style="white-space:normal;">
+                        <div class="pk-ticket-diag-head">
+                            <span class="fw-bold">Diagnosis &amp; Biaya</span>
+                            <div class="pk-ticket-diag-stats">
                                 <span>Biaya: <strong><?= rupiah($t['estimasi_biaya']) ?></strong></span>
                                 <span>Durasi: <strong><?= (int)$t['estimasi_hari'] ?> Hari</strong></span>
                             </div>
                         </div>
-                    <?php else: ?>
-                        <div class="pk-guideline-box" style="white-space:normal;">
-                            Menunggu diagnosis teknisi terverifikasi.
-                        </div>
-                    <?php endif; ?>
+                        <div><?= e($t['diagnosis_teknisi']) ?></div>
+                    </div>
+                <?php else: ?>
+                    <div class="pk-guideline-box" style="white-space:normal;">
+                        Menunggu diagnosis teknisi terverifikasi.
+                    </div>
+                <?php endif; ?>
 
+                <?php $can_cancel = in_array($t['status_tiket'], ['Menunggu Diagnosis', 'Menunggu Persetujuan'], true); ?>
+                <?php $can_confirm = ($t['status_tiket'] === 'Siap Diambil'); ?>
+                <?php if ($can_cancel || $can_confirm): ?>
                     <div class="btn-group-wrap mt-3">
-                        <?php if (in_array($t['status_tiket'], ['Menunggu Diagnosis', 'Menunggu Persetujuan'], true)): ?>
+                        <?php if ($can_cancel): ?>
                             <form method="post" action="<?= BASE_URL ?>/perbaikan/tiket_saya.php" data-confirm="Batalkan tiket perbaikan <?= e($t['kode_tiket']) ?>?" data-confirm-title="Batalkan Tiket" data-confirm-btn="Batalkan" data-confirm-tone="danger">
                                 <input type="hidden" name="id_tiket" value="<?= (int)$t['id_tiket'] ?>">
                                 <input type="hidden" name="action" value="cancel_ticket">
@@ -233,7 +267,7 @@ require_once ROOT_PATH . '/includes/header.php';
                             </form>
                         <?php endif; ?>
 
-                        <?php if ($t['status_tiket'] === 'Siap Diambil'): ?>
+                        <?php if ($can_confirm): ?>
                             <form method="post" action="<?= BASE_URL ?>/perbaikan/tiket_saya.php" data-confirm="Konfirmasi perbaikan <?= e($t['kode_tiket']) ?> sudah diterima?" data-confirm-title="Konfirmasi Selesai" data-confirm-btn="Selesai" data-confirm-tone="primary">
                                 <input type="hidden" name="id_tiket" value="<?= (int)$t['id_tiket'] ?>">
                                 <input type="hidden" name="action" value="confirm_done">
@@ -244,7 +278,7 @@ require_once ROOT_PATH . '/includes/header.php';
                             </form>
                         <?php endif; ?>
                     </div>
-                </div>
+                <?php endif; ?>
             </div>
         </article>
     <?php endwhile; ?>
