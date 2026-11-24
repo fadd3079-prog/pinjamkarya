@@ -1,15 +1,27 @@
 <?php
+/**
+ * Halaman pengajuan tiket perbaikan barang Warga.
+ *
+ * Tujuan : Menerima laporan kerusakan barang warga beserta foto dan metode cek,
+ *          lalu menerbitkan kode tiket servis.
+ * Akses  : Warga (role 'warga').
+ * Alur   : POST -> validasi isian & kontak -> unggah foto -> buat kode tiket ->
+ *          simpan tiket "Menunggu Diagnosis" -> redirect ke daftar tiket.
+ */
+
 require_once dirname(__DIR__) . '/config/app.php';
 require_role(['warga']);
 refresh_user_session($conn);
 
 $id_pelapor = (int)$_SESSION['user']['id_user'];
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $id_kategori = (int)($_POST['id_kategori'] ?? 0);
-    $nama_barang = trim($_POST['nama_barang'] ?? '');
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verify_csrf_token()) {
+    set_flash('danger', 'Sesi formulir kedaluwarsa. Silakan muat ulang halaman.');
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $id_kategori         = (int)($_POST['id_kategori'] ?? 0);
+    $nama_barang         = trim($_POST['nama_barang'] ?? '');
     $deskripsi_kerusakan = trim($_POST['deskripsi_kerusakan'] ?? '');
-    $metode_cek = ($_POST['metode_cek'] ?? '') === 'Kunjungan Teknisi' ? 'Kunjungan Teknisi' : 'Diantar ke Hub';
+    $metode_cek          = ($_POST['metode_cek'] ?? '') === 'Kunjungan Teknisi' ? 'Kunjungan Teknisi' : 'Diantar ke Hub';
 
     if ($id_kategori <= 0 || $nama_barang === '' || $deskripsi_kerusakan === '') {
         set_flash('warning', 'Kategori, nama barang, dan keluhan kerusakan wajib diisi.');
@@ -19,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             set_flash('warning', $kontak_res['message']);
         } else {
             $foto_filename = 'default_tiket.jpg';
-            $upload_ok = true;
+            $upload_ok     = true;
 
             if (isset($_FILES['foto_barang']) && $_FILES['foto_barang']['error'] !== UPLOAD_ERR_NO_FILE) {
                 $up = upload_gambar($_FILES['foto_barang'], UPLOAD_TIKET_PATH, 'tiket_');
@@ -48,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$res_kat = mysqli_query($conn, 'SELECT id_kategori, nama_kategori, rata_rata_berat_kg, estimasi_harga_baru FROM kategori_alat ORDER BY nama_kategori ASC');
+$kategori_options = pk_stmt_all($conn, 'SELECT id_kategori, nama_kategori, rata_rata_berat_kg, estimasi_harga_baru FROM kategori_alat ORDER BY nama_kategori ASC');
 
 $page_title = 'Ajukan Perbaikan';
 require_once ROOT_PATH . '/includes/header.php';
@@ -72,6 +84,7 @@ require_once ROOT_PATH . '/includes/header.php';
         </div>
 
         <form method="post" action="<?= BASE_URL ?>/perbaikan/buat_tiket.php" enctype="multipart/form-data">
+            <?= csrf_field() ?>
             <div class="form-group">
                 <label for="nama_barang" class="form-label">Nama &amp; Merek Barang</label>
                 <input type="text" id="nama_barang" name="nama_barang" class="form-control" placeholder="Contoh: Blender Philips HR2115" value="<?= e($_POST['nama_barang'] ?? '') ?>" required>
@@ -82,11 +95,11 @@ require_once ROOT_PATH . '/includes/header.php';
                     <label for="id_kategori" class="form-label">Kategori</label>
                     <select id="id_kategori" name="id_kategori" class="form-select" required>
                         <option value="">Pilih Kategori</option>
-                        <?php while ($k = mysqli_fetch_assoc($res_kat)): ?>
+                        <?php foreach ($kategori_options as $k): ?>
                             <option value="<?= (int)$k['id_kategori'] ?>" <?= ((int)($_POST['id_kategori'] ?? 0) === (int)$k['id_kategori']) ? 'selected' : '' ?>>
                                 <?= e($k['nama_kategori']) ?> (<?= number_format((float)$k['rata_rata_berat_kg'], 1, ',', '.') ?> Kg)
                             </option>
-                        <?php endwhile; ?>
+                        <?php endforeach; ?>
                     </select>
                 </div>
 

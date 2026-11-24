@@ -1,4 +1,9 @@
+/* =========================================================
+   PINJAMKARYA UI — progressive interactions
+   ========================================================= */
+
 document.addEventListener('DOMContentLoaded', function () {
+  /* ---------- Landing navigation & overlay header ---------- */
   const siteHeader = document.getElementById('site-header');
   const siteToggle = document.querySelector('.site-nav_toggle');
   const siteMenu = document.getElementById('site-menu');
@@ -39,6 +44,7 @@ document.addEventListener('DOMContentLoaded', function () {
     syncHeaderOverlay();
   }
 
+  /* ---------- App sidebar, modals & confirm dialog ---------- */
   const backdrop = document.getElementById('pkBackdrop');
   const sidebar = document.getElementById('pkSidebar');
   const sidebarToggle = document.getElementById('pkSidebarToggle');
@@ -133,12 +139,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') {
-      closeAllDrawers();
-    }
-  });
-
   if (confirmModal && confirmSubmitBtn) {
     const toneBtnMap = {
       danger: 'btn btn-danger',
@@ -187,6 +187,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  /* ---------- Flash alerts & tabs ---------- */
   document.querySelectorAll('.pk-alert-close').forEach(function (btn) {
     btn.addEventListener('click', function () {
       const alertBox = btn.closest('.pk-alert');
@@ -216,6 +217,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
+  /* ---------- Login demo filler & registration sub-roles ---------- */
   const demoButtons = document.querySelectorAll('[data-demo-email]');
   demoButtons.forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -248,6 +250,7 @@ document.addEventListener('DOMContentLoaded', function () {
     syncRoleView();
   }
 
+  /* ---------- Reservation date range & duration ---------- */
   const tglMulaiInput = document.getElementById('tgl_mulai');
   const tglSelesaiInput = document.getElementById('tgl_selesai');
   const durasiInfoBox = document.getElementById('durasiInfoBox');
@@ -265,13 +268,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const diffDays = Math.round((end - start) / 86400000) + 1;
         const maxDays = parseInt(durasiInfoBox.getAttribute('data-max-hari') || '3', 10);
         if (diffDays > 0) {
-          if (diffDays > maxDays) {
-            durasiInfoBox.textContent = 'Durasi: ' + diffDays + ' hari (maksimal ' + maxDays + ' hari).';
-            durasiInfoBox.className = 'form-help text-danger fw-bold';
-          } else {
-            durasiInfoBox.textContent = 'Durasi: ' + diffDays + ' hari (maksimal ' + maxDays + ' hari).';
-            durasiInfoBox.className = 'form-help text-secondary fw-bold';
-          }
+          durasiInfoBox.textContent = 'Durasi: ' + diffDays + ' hari (maksimal ' + maxDays + ' hari).';
+          durasiInfoBox.className = diffDays > maxDays
+            ? 'form-help text-danger fw-bold'
+            : 'form-help text-secondary fw-bold';
         }
       }
     }
@@ -280,6 +280,7 @@ document.addEventListener('DOMContentLoaded', function () {
     updateDateConstraints();
   }
 
+  /* ---------- Custom accessible select ---------- */
   const customSelects = [];
   let selectUid = 0;
 
@@ -519,6 +520,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
+      closeAllDrawers();
       closeAllSelects(null);
     }
   });

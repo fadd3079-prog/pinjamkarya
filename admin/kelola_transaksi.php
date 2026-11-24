@@ -1,10 +1,26 @@
 <?php
+/**
+ * Halaman transaksi peminjaman (panel Admin Hub).
+ *
+ * Tujuan : Memantau seluruh booking, memfilter berdasarkan status, membatalkan
+ *          pesanan no-show, serta menjadi pintu masuk inspeksi awal/akhir.
+ * Akses  : Admin Hub (role 'admin').
+ * Alur   : Bersihkan ghost booking -> aksi POST (cancel_noshow) -> muat daftar
+ *          transaksi sesuai filter -> tampilkan tabel dan aksi inspeksi.
+ */
+
 require_once dirname(__DIR__) . '/config/app.php';
 require_role(['admin']);
 
 bersihkan_ghost_booking($conn);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'cancel_noshow') {
+    if (!verify_csrf_token()) {
+        set_flash('danger', 'Sesi formulir kedaluwarsa. Silakan muat ulang halaman.');
+        header('Location: ' . BASE_URL . '/admin/kelola_transaksi.php');
+        exit;
+    }
+
     $id_peminjaman = (int)($_POST['id_peminjaman'] ?? 0);
     $stmt = mysqli_prepare($conn, "UPDATE peminjaman SET status_peminjaman = 'Dibatalkan' WHERE id_peminjaman = ? AND status_peminjaman = 'Dipesan'");
     mysqli_stmt_bind_param($stmt, 'i', $id_peminjaman);
@@ -16,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'cance
     exit;
 }
 
-$filter_status = $_GET['status'] ?? '';
+$filter_status    = $_GET['status'] ?? '';
 $allowed_statuses = ['Dipesan', 'Dipinjam', 'Selesai', 'Dibatalkan'];
 
 $sql = "SELECT p.*, a.nama_alat, u.nama AS nama_warga, u.no_hp, u.skor_kredibilitas
@@ -25,14 +41,13 @@ $sql = "SELECT p.*, a.nama_alat, u.nama AS nama_warga, u.no_hp, u.skor_kredibili
         JOIN users u ON p.id_warga = u.id_user";
 
 if (in_array($filter_status, $allowed_statuses, true)) {
+    // Filter valid: tampilkan satu status saja.
     $sql .= " WHERE p.status_peminjaman = ? ORDER BY p.id_peminjaman DESC";
-    $stmt = mysqli_prepare($conn, $sql);
-    mysqli_stmt_bind_param($stmt, 's', $filter_status);
-    mysqli_stmt_execute($stmt);
-    $res_trx = mysqli_stmt_get_result($stmt);
+    $trx_list = pk_stmt_all($conn, $sql, 's', [$filter_status]);
 } else {
+    // Tanpa filter: urutkan berdasarkan prioritas status lalu ID terbaru.
     $sql .= " ORDER BY FIELD(p.status_peminjaman, 'Dipesan', 'Dipinjam', 'Selesai', 'Dibatalkan'), p.id_peminjaman DESC";
-    $res_trx = mysqli_query($conn, $sql);
+    $trx_list = pk_stmt_all($conn, $sql);
 }
 
 $page_title = 'Transaksi Peminjaman';
@@ -75,12 +90,12 @@ require_once ROOT_PATH . '/includes/header.php';
                 </tr>
             </thead>
             <tbody>
-                <?php if (mysqli_num_rows($res_trx) === 0): ?>
+                <?php if (count($trx_list) === 0): ?>
                     <tr>
                         <td colspan="6" class="text-center text-muted">Tidak ada transaksi pada filter ini.</td>
                     </tr>
                 <?php else: ?>
-                    <?php while ($t = mysqli_fetch_assoc($res_trx)): ?>
+                    <?php foreach ($trx_list as $t): ?>
                         <tr>
                             <td class="pk-td-head">
                                 <div class="pk-td-head-row">
@@ -108,6 +123,7 @@ require_once ROOT_PATH . '/includes/header.php';
                                             <span>Inspeksi Awal</span>
                                         </a>
                                         <form method="post" action="<?= BASE_URL ?>/admin/kelola_transaksi.php" data-confirm="Batalkan pesanan <?= e($t['kode_booking']) ?> (No-Show)?" data-confirm-title="Batalkan Pesanan" data-confirm-btn="Batalkan" data-confirm-tone="danger">
+                                            <?= csrf_field() ?>
                                             <input type="hidden" name="action" value="cancel_noshow">
                                             <input type="hidden" name="id_peminjaman" value="<?= (int)$t['id_peminjaman'] ?>">
                                             <button type="submit" class="btn btn-danger btn-icon" title="No-Show" aria-label="Batalkan No-Show <?= e($t['kode_booking']) ?>">
@@ -127,7 +143,7 @@ require_once ROOT_PATH . '/includes/header.php';
                                 <?php endif; ?>
                             </td>
                         </tr>
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
                 <?php endif; ?>
             </tbody>
         </table>

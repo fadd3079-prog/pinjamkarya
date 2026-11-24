@@ -1,15 +1,27 @@
 <?php
+/**
+ * Halaman profil pengguna.
+ *
+ * Tujuan : Menampilkan data akun, status/skor kepercayaan, serta memungkinkan
+ *          pengguna memperbarui nama, kontak, alamat, dan kata sandi.
+ * Akses  : Semua pengguna yang sudah login.
+ * Alur   : POST (dengan CSRF) -> validasi -> update users -> segarkan sesi ->
+ *          redirect. GET memuat profil dan riwayat inspeksi khusus Warga.
+ */
+
 require_once dirname(__DIR__) . '/config/app.php';
 require_login();
 refresh_user_session($conn);
 
-$user = $_SESSION['user'];
+$user    = $_SESSION['user'];
 $id_user = (int)$user['id_user'];
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nama = trim($_POST['nama'] ?? '');
-    $no_hp = trim($_POST['no_hp'] ?? '');
-    $alamat = trim($_POST['alamat'] ?? '');
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verify_csrf_token()) {
+    set_flash('danger', 'Sesi formulir kedaluwarsa. Silakan muat ulang halaman.');
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $nama          = trim($_POST['nama'] ?? '');
+    $no_hp         = trim($_POST['no_hp'] ?? '');
+    $alamat        = trim($_POST['alamat'] ?? '');
     $password_baru = $_POST['password_baru'] ?? '';
 
     if ($nama === '' || $no_hp === '' || $alamat === '') {
@@ -17,6 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($password_baru !== '' && strlen($password_baru) < 6) {
         set_flash('warning', 'Kata sandi baru minimal terdiri dari 6 karakter.');
     } else {
+        // Kata sandi hanya diperbarui bila kolomnya diisi.
         if ($password_baru !== '') {
             $hash = password_hash($password_baru, PASSWORD_DEFAULT);
             $stmt = mysqli_prepare($conn, 'UPDATE users SET nama = ?, no_hp = ?, alamat = ?, password = ? WHERE id_user = ?');
@@ -38,20 +51,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $riwayat_inspeksi = [];
 if ($user['role'] === 'warga') {
-    $sql_hist = "SELECT i.*, p.kode_booking, p.tgl_mulai, p.tgl_selesai, a.nama_alat
-                 FROM inspeksi_alat i
-                 JOIN peminjaman p ON i.id_peminjaman = p.id_peminjaman
-                 JOIN aset_alat a ON p.id_alat = a.id_alat
-                 WHERE p.id_warga = ?
-                 ORDER BY i.waktu_inspeksi DESC";
-    $stmt_h = mysqli_prepare($conn, $sql_hist);
-    mysqli_stmt_bind_param($stmt_h, 'i', $id_user);
-    mysqli_stmt_execute($stmt_h);
-    $res_h = mysqli_stmt_get_result($stmt_h);
-    while ($row = mysqli_fetch_assoc($res_h)) {
-        $riwayat_inspeksi[] = $row;
-    }
-    mysqli_stmt_close($stmt_h);
+    $riwayat_inspeksi = pk_stmt_all(
+        $conn,
+        "SELECT i.*, p.kode_booking, p.tgl_mulai, p.tgl_selesai, a.nama_alat
+         FROM inspeksi_alat i
+         JOIN peminjaman p ON i.id_peminjaman = p.id_peminjaman
+         JOIN aset_alat a ON p.id_alat = a.id_alat
+         WHERE p.id_warga = ?
+         ORDER BY i.waktu_inspeksi DESC",
+        'i',
+        [$id_user]
+    );
 }
 
 $page_title = 'Profil & Skor Kepercayaan';
@@ -160,6 +170,7 @@ require_once ROOT_PATH . '/includes/header.php';
             </div>
 
             <form method="post" action="<?= BASE_URL ?>/auth/profil.php">
+                <?= csrf_field() ?>
                 <div class="form-group">
                     <label for="email_view" class="form-label">Email</label>
                     <input type="email" id="email_view" class="form-control" value="<?= e($user['email']) ?>" disabled>

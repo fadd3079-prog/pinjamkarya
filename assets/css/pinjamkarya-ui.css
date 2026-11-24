@@ -1,3 +1,8 @@
+/* =========================================================
+   PINJAMKARYA UI STYLESHEET
+   Order: design tokens -> base elements -> shared components -> page sections
+   ========================================================= */
+
 @font-face {
   font-family: 'Mufaddhol Sans';
   src: url('../fonts/AdwaitaSans-Variable.woff2') format('woff2'),
@@ -7,6 +12,7 @@
   font-display: swap;
 }
 
+/* ---------- Design tokens ---------- */
 :root {
   /* Monochrome off-white & charcoal tokens (no pure black) */
   --canvas: #f3f2ee;
@@ -2263,7 +2269,7 @@ a.pk-card:hover {
   background: var(--surface);
 }
 
-/* SVG Trend Chart */
+/* ---------- Chart legend & mini charts ---------- */
 .pk-chart-legend {
   display: inline-flex;
   align-items: center;
@@ -2340,7 +2346,7 @@ a.pk-card:hover {
   fill: #b45309;
 }
 
-/* Distribution Stacked Bar & Breakdown */
+/* ---------- Distribution bar & breakdown ---------- */
 .pk-dist-bar {
   display: flex;
   width: 100%;
@@ -2407,7 +2413,7 @@ a.pk-card:hover {
   white-space: nowrap;
 }
 
-/* Progress Meters */
+/* ---------- Progress meters ---------- */
 .pk-meters {
   display: flex;
   flex-direction: column;
@@ -2468,7 +2474,7 @@ a.pk-card:hover {
   background: var(--err-fg);
 }
 
-/* Focus List & Quick Shortcuts */
+/* ---------- Focus list & quick shortcuts ---------- */
 .pk-shortcut-list {
   display: flex;
   flex-direction: column;
@@ -2539,6 +2545,7 @@ a.pk-card:hover {
   color: var(--warn-fg);
 }
 
+/* ---------- Service cards ---------- */
 .pk-service-card {
   position: relative;
   overflow: hidden;
@@ -2637,6 +2644,7 @@ a.pk-card:hover {
   }
 }
 
+/* ---------- Tool / masonry cards ---------- */
 .pk-masonry {
   --pk-masonry-gap: 12px;
   display: grid;
