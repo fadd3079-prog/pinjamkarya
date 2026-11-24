@@ -27,7 +27,7 @@ Seluruh halaman aplikasi dikelompokkan berdasarkan domain fitur (100% PHP Native
 
 - **Root (`index.php`, `dashboard.php`):**
   - `index.php`: Halaman beranda publik, ringkasan katalog, alur peminjaman/servis, serta etalase dampak sirkularitas Hub.
-  - `dashboard.php`: Dashboard analitik dampak sirkularitas SDGs (penghematan warga, berat *e-waste* yang dicegah, barang terselamatkan, peminjaman tuntas, serta grafik SVG per kategori) dan ringkasan peran pengguna.
+  - `dashboard.php`: Pengendali utama (*controller*) halaman Dashboard multi-peran yang menangani autentikasi sesi, pembersihan *Ghost Booking*, inisialisasi data bersama, serta pemuatan komponen parsial tampilan Bento Grid sesuai peran aktif (`includes/dashboard_admin.php`, `includes/dashboard_mitra.php`, dan `includes/dashboard_user.php`).
 - **`auth/` (Autentikasi, Profil & Google OAuth):**
   - `login.php`, `register.php`, `logout.php`, `google_login.php`, `google_callback.php`, `profil.php`.
   - Mengelola registrasi warga/mitra, login email/Google, sesi pengguna, pembaruan profil, dan visualisasi Skor Kepercayaan Komunitas.
@@ -52,7 +52,10 @@ Seluruh halaman aplikasi dikelompokkan berdasarkan domain fitur (100% PHP Native
   - `kelola_tiket.php`: Pengawasan tiket servis dan pemulihan otomatis status alat inventaris Hub setelah selesai diservis.
 - **`config/`, `includes/`, `assets/`, `database/`:**
   - `config/`: Konfigurasi terpusat (`app.php`, `database.php`, `google.php`, serta templat `config.example.php` / `google.example.php`).
-  - `includes/`: Komponen layout bersama (`header.php`, `sidebar.php`, `footer.php`, `functions.php`).
+  - `includes/`:
+    - Kerangka layout bersama (`header.php`, `sidebar.php`, `footer.php`).
+    - Komponen parsial tampilan dashboard per peran (`dashboard_admin.php`, `dashboard_mitra.php`, `dashboard_user.php`).
+    - Pustaka fungsi helper & komponen UI terpusat (`functions.php`: autentikasi/sesi, token CSRF, query *prepared statement* `pk_stmt_all`/`pk_stmt_one`, pemformatan, unggah gambar, generator kode unik `generate_kode_unik`, perender grafik tren SVG `pk_render_svg_trend`, serta perender tata letak Bento Grid `pk_render_dashboard_bento`).
   - `assets/`: Aset statis lokal (`css/pinjamkarya-ui.css`, `js/pinjamkarya.js`, gambar, dan direktori unggahan).
   - `database/pinjamkarya.sql`: Skema tabel relasional dan *seed data* awal.
 
@@ -63,7 +66,7 @@ Seluruh halaman aplikasi dikelompokkan berdasarkan domain fitur (100% PHP Native
 - **Basis Data:** MySQL / MariaDB (InnoDB Relational Schema dengan Foreign Key Constraints).
 - **Frontend Styling:** 100% Pure Vanilla CSS3 Lokal (`assets/css/pinjamkarya-ui.css`) menggunakan CSS Custom Properties (`:root`), CSS Grid, dan Flexbox tanpa framework CSS eksternal dan tanpa CDN.
 - **Interaktivitas:** 100% Pure Vanilla JavaScript ES6+ Lokal (`assets/js/pinjamkarya.js`) tanpa library pihak ketiga.
-- **Visual & Grafik:** Pure Inline SVG Icons & Native SVG Bar Chart (`includes/functions.php` & `dashboard.php`).
+- **Visual & Grafik:** Pure Inline SVG Icons & Native SVG Bar Chart (`includes/functions.php`, `dashboard.php`, serta parsial `includes/dashboard_admin.php`, `includes/dashboard_mitra.php`, dan `includes/dashboard_user.php`).
 
 ---
 

@@ -23,8 +23,6 @@ php_errors.log
 playwright-report/
 test-results/
 .playwright*
-anti-slop/
-skills/
 
 # Dependensi (tidak digunakan di stack PHP native)
 vendor/
@@ -34,8 +32,6 @@ node_modules/
 .vscode/
 .idea/
 .fleet/
-.claude/
-.gemini/
 *.swp
 *.swo
 *~

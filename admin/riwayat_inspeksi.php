@@ -1,4 +1,14 @@
 <?php
+/**
+ * Halaman log riwayat inspeksi fisik aset (perbandingan Awal & Akhir).
+ *
+ * Tujuan : Menampilkan catatan pemeriksaan fisik serah-terima awal dan
+ *          pengembalian akhir secara berdampingan per kode booking.
+ * Akses  : Admin Hub (seluruh aset) dan Mitra Kontributor (khusus aset miliknya).
+ * Alur   : Validasi peran -> filter opsional id_peminjaman -> kelompokkan log
+ *          Awal & Akhir per transaksi -> tampilkan tabel komparasi.
+ */
+
 require_once dirname(__DIR__) . '/config/app.php';
 require_role(['admin', 'mitra']);
 refresh_user_session($conn);

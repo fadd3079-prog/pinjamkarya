@@ -1,4 +1,9 @@
-<?php if (!empty($minimal_layout)): ?>
+<?php
+/**
+ * Komponen penutup tata letak HTML, dialog konfirmasi global (#pkConfirmModal),
+ * serta pemuat bundel skrip interaksi antarmuka PinjamKarya.
+ */
+if (!empty($minimal_layout)): ?>
 </main>
 <?php elseif (!empty($public_layout)): ?>
     </div>
@@ -11,6 +16,7 @@
 </div>
 <?php endif; ?>
 
+<?php // Render modal konfirmasi aksi global untuk halaman non-minimal ?>
 <?php if (empty($minimal_layout)): ?>
 <div id="pkConfirmModal" class="pk-modal" role="dialog" aria-modal="true" aria-labelledby="pkConfirmTitle" aria-hidden="true">
     <div class="pk-modal-dialog pk-modal-dialog--confirm">

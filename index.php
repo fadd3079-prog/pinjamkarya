@@ -1,6 +1,13 @@
 <?php
+/**
+ * Halaman beranda publik (Landing Page) PinjamKarya.
+ *
+ * Menampilkan ringkasan layanan sirkular komunitas, kalkulasi metrik dampak
+ * penghematan warga secara langsung (live), serta pratinjau katalog perkakas.
+ */
 require_once __DIR__ . '/config/app.php';
 
+// Sinkronisasi sesi aktif bila pengunjung sudah masuk dan bersihkan reservasi kedaluwarsa
 $is_logged_in = isset($_SESSION['user']);
 if ($is_logged_in) {
     refresh_user_session($conn);
@@ -8,6 +15,7 @@ if ($is_logged_in) {
 
 bersihkan_ghost_booking($conn);
 
+// Agregasi metrik dampak komunitas secara langsung dari basis data
 $q_alat = mysqli_query($conn, "SELECT COUNT(*) AS total FROM aset_alat WHERE status_alat = 'Tersedia'");
 $jml_alat_tersedia = (int)(mysqli_fetch_assoc($q_alat)['total'] ?? 0);
 
@@ -28,6 +36,7 @@ $hemat_servis = (float)(mysqli_fetch_assoc($q_hemat_servis)['total'] ?? 0);
 
 $total_penghematan = $hemat_pinjam + $hemat_servis;
 
+// Ambil 4 unit perkakas prioritas untuk pratinjau katalog di halaman utama
 $q_preview = mysqli_query($conn, "SELECT a.*, k.nama_kategori
     FROM aset_alat a
     JOIN kategori_alat k ON a.id_kategori = k.id_kategori

@@ -1,10 +1,19 @@
 <?php
+/**
+ * Komponen kerangka pembuka dokumen HTML dan tata letak adaptif PinjamKarya.
+ *
+ * Mendukung tiga mode tampilan:
+ * - Minimal Layout ($minimal_layout = true) untuk halaman autentikasi.
+ * - Public Layout ($public_layout = true) untuk pengunjung publik yang belum masuk.
+ * - Workspace App Shell (default) dengan sidebar dan topbar aplikasi.
+ */
 require_once dirname(__DIR__) . '/config/app.php';
 
 if (isset($_SESSION['user'])) {
     refresh_user_session($conn);
 }
 
+// Inisialisasi konteks pengguna aktif dan konfigurasi tata letak halaman
 $current_user = $_SESSION['user'] ?? null;
 $minimal_layout = !empty($minimal_layout);
 $public_layout = !empty($public_layout);
