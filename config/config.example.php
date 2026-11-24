@@ -4,7 +4,7 @@
  *
  * Untuk konfigurasi lokal atau server hosting:
  * 1. Salin file ini menjadi config/config.local.php (sudah diabaikan .gitignore).
- * 2. Sesuaikan nilai database, base_url (opsional), dan kredensial Google OAuth.
+ * 2. Sesuaikan nilai database dan base_url (opsional).
  * 3. Alternatif server produksi: atur variabel environment (APP_BASE_URL, DB_HOST, dll).
  */
 return [
@@ -23,12 +23,5 @@ return [
         'pass'    => '',
         'name'    => 'pinjamkarya',
         'charset' => 'utf8mb4',
-    ],
-
-    'google' => [
-        'client_id'     => '',
-        'client_secret' => '',
-        // Opsional: kosongkan untuk otomatis memakai BASE_URL . '/auth/google_callback.php'
-        'redirect_uri'  => '',
     ],
 ];

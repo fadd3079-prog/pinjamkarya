@@ -66,7 +66,7 @@ require_once ROOT_PATH . '/includes/header.php';
 
     <div class="pk-auth-divider" aria-hidden="true"><span>atau</span></div>
 
-    <a href="<?= BASE_URL ?>/auth/google_login.php?from=login" class="btn btn-outline btn-google">
+    <a href="#" class="btn btn-outline btn-google" onclick="return false;">
         <?= google_mark_svg(15) ?>
         <span>Masuk dengan Google</span>
     </a>

@@ -59,11 +59,6 @@ function pk_config(?string $section = null)
                 'name'    => 'pinjamkarya',
                 'charset' => 'utf8mb4',
             ],
-            'google' => [
-                'client_id'     => '',
-                'client_secret' => '',
-                'redirect_uri'  => '',
-            ],
         ];
 
         $local_file = __DIR__ . '/config.local.php';
@@ -71,17 +66,6 @@ function pk_config(?string $section = null)
         foreach ($defaults as $key => $section_defaults) {
             if (isset($local[$key]) && is_array($local[$key])) {
                 $defaults[$key] = array_merge($section_defaults, $local[$key]);
-            }
-        }
-
-        // Dukungan legacy config/google.local.php jika masih dipakai secara lokal
-        $google_local_file = __DIR__ . '/google.local.php';
-        if (is_file($google_local_file)) {
-            $google_local = (array)(include $google_local_file);
-            foreach (['client_id', 'client_secret', 'redirect_uri'] as $gk) {
-                if (trim((string)($defaults['google'][$gk] ?? '')) === '' && !empty($google_local[$gk])) {
-                    $defaults['google'][$gk] = trim((string)$google_local[$gk]);
-                }
             }
         }
 
@@ -95,9 +79,6 @@ function pk_config(?string $section = null)
             'database.user'        => getenv('DB_USER'),
             'database.pass'        => getenv('DB_PASS'),
             'database.name'        => getenv('DB_NAME'),
-            'google.client_id'     => getenv('GOOGLE_CLIENT_ID'),
-            'google.client_secret' => getenv('GOOGLE_CLIENT_SECRET'),
-            'google.redirect_uri'  => getenv('GOOGLE_REDIRECT_URI'),
         ];
 
         foreach ($env_map as $path => $val) {
@@ -158,5 +139,4 @@ if (!defined('UPLOAD_TIKET_PATH')) {
 }
 
 require_once ROOT_PATH . '/config/database.php';
-require_once ROOT_PATH . '/config/google.php';
 require_once ROOT_PATH . '/includes/functions.php';
