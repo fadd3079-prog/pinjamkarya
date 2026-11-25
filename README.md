@@ -5,10 +5,10 @@
 1. **Perpustakaan Perkakas Komunitas (*Library of Things*):** Memfasilitasi peminjaman perkakas pertukangan, peralatan produksi UMKM, sarana acara komunal, hingga alat bantu mobilitas kesehatan tanpa harus membeli unit baru.
 2. **Pusat Perbaikan Mandiri (*Right-to-Repair Hub*):** Mempertemukan warga yang memiliki barang elektronik atau perkakas rusak dengan teknisi lokal terverifikasi melalui mekanisme diagnosis dan persetujuan estimasi biaya yang transparan.
 
-### Identitas Tim Pengembang
-- **Aflah** (Pengelola Hub & Arsitektur Sistem)
-- **Balqis** (Koordinator Mitra Kontributor & Layanan Right-to-Repair)
-- **Fadhol** (Pengembangan Pengalaman Warga & Analitik Dampak SDGs)
+### Tim Pengembang
+- **Muhammad Aflah Alfafa Mufa** (H1D025078)
+- **Balqis Safitri** (H1D025070)
+- **Mufaddhol** (H1D025069)
 
 ---
 
