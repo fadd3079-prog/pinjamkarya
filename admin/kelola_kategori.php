@@ -224,8 +224,8 @@ require_once ROOT_PATH . '/includes/header.php';
             </div>
 
             <div class="form-group">
-                <label for="panduan_keselamatan" class="form-label">Panduan Keselamatan Kerja</label>
-                <textarea id="panduan_keselamatan" name="panduan_keselamatan" class="form-control" rows="5" required><?= e($form_val['panduan_keselamatan'] ?? '') ?></textarea>
+                <label for="panduan_keselamatan" class="form-label">Panduan Keselamatan Umum Kategori</label>
+                <textarea id="panduan_keselamatan" name="panduan_keselamatan" class="form-control" rows="5" placeholder="Berlaku otomatis untuk unit yang belum memiliki panduan khusus alat." required><?= e($form_val['panduan_keselamatan'] ?? '') ?></textarea>
             </div>
 
             <button type="submit" class="btn btn-primary w-100">

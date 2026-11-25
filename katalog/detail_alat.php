@@ -22,7 +22,9 @@ if ($id_alat <= 0) {
 
 $alat = pk_stmt_one(
     $conn,
-    "SELECT a.*, k.nama_kategori, k.panduan_keselamatan, k.rata_rata_berat_kg,
+    "SELECT a.*, k.nama_kategori, k.rata_rata_berat_kg,
+            a.panduan_keselamatan AS panduan_alat,
+            k.panduan_keselamatan AS panduan_kategori,
             u.nama AS nama_pemilik, u.role AS role_pemilik
      FROM aset_alat a
      JOIN kategori_alat k ON a.id_kategori = k.id_kategori
@@ -39,6 +41,7 @@ if (empty($alat)) {
 }
 
 $is_tersedia = ($alat['status_alat'] === 'Tersedia');
+$panduan_info = pk_get_panduan_keselamatan($alat);
 
 // Ambil booking aktif yang belum selesai sebagai informasi jadwal terisi.
 $jadwal_terisi = pk_stmt_all(
@@ -83,10 +86,7 @@ require_once ROOT_PATH . '/includes/header.php';
                 <div class="pk-tool-badges">
                     <span class="pk-tag"><?= e($alat['nama_kategori']) ?></span>
                     <div class="pk-td-val">
-                        <?php if (!$is_tersedia): ?>
-                            <span class="pk-badge pk-badge--unavailable">Tidak Tersedia</span>
-                        <?php endif; ?>
-                        <?= badge_status_alat($alat['status_alat']) ?>
+                        <?= badge_status_katalog($alat['status_alat']) ?>
                     </div>
                 </div>
             </div>
@@ -97,7 +97,7 @@ require_once ROOT_PATH . '/includes/header.php';
             <ul class="pk-tool-meta mb-3">
                 <li>
                     <span>Status</span>
-                    <?= badge_status_alat($alat['status_alat']) ?>
+                    <?= badge_status_katalog($alat['status_alat']) ?>
                 </li>
                 <li>
                     <span>Pemilik</span>
@@ -126,7 +126,14 @@ require_once ROOT_PATH . '/includes/header.php';
             </ul>
 
             <?php if (!$is_tersedia): ?>
-                <?= render_alert('warning', 'Tidak tersedia: unit berstatus ' . $alat['status_alat'] . '.', false, '', 'mb-2') ?>
+                <?php
+                $msg_status = $alat['status_alat'] === 'Perawatan'
+                    ? 'Unit sedang diperbaiki dan belum dapat dipesan.'
+                    : ($alat['status_alat'] === 'Dipinjam'
+                        ? 'Unit sedang dipinjam hingga jadwal berakhir.'
+                        : 'Unit belum tersedia untuk dipinjam saat ini.');
+                ?>
+                <?= render_alert('warning', $msg_status, false, '', 'mb-2') ?>
                 <button type="button" class="btn btn-muted w-100" disabled>Tidak Tersedia</button>
             <?php else: ?>
                 <a href="<?= e($reservasi_url) ?>" class="btn btn-primary w-100">
@@ -144,8 +151,9 @@ require_once ROOT_PATH . '/includes/header.php';
                     <?= svg_icon('shield', 18) ?>
                     <span>Panduan Keselamatan</span>
                 </h2>
+                <span class="pk-tag"><?= $panduan_info['is_khusus'] ? 'Khusus Alat' : 'Umum Kategori' ?></span>
             </div>
-            <div class="pk-guideline-box"><?= e($alat['panduan_keselamatan']) ?></div>
+            <div class="pk-guideline-box"><?= e($panduan_info['teks']) ?></div>
         </section>
 
         <section class="pk-table-card" aria-labelledby="jadwal-heading">

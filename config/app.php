@@ -11,7 +11,11 @@ function pk_is_https(): bool
     if (($_SERVER['SERVER_PORT'] ?? '') === '443') {
         return true;
     }
-    return strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+    if (strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https') {
+        return true;
+    }
+    $cf_visitor = (string)($_SERVER['HTTP_CF_VISITOR'] ?? '');
+    return $cf_visitor !== '' && stripos($cf_visitor, '"https"') !== false;
 }
 
 function pk_detect_base_url(): string
@@ -23,17 +27,48 @@ function pk_detect_base_url(): string
         $host = 'localhost';
     }
 
-    $doc_root = realpath((string)($_SERVER['DOCUMENT_ROOT'] ?? ''));
-    $root_dir = realpath(ROOT_PATH);
+    $doc_raw = (string)($_SERVER['DOCUMENT_ROOT'] ?? '');
+    $doc_real = $doc_raw !== '' ? @realpath($doc_raw) : false;
+    $doc_use = $doc_real !== false ? $doc_real : $doc_raw;
+    $root_real = @realpath(ROOT_PATH);
+    $root_use = $root_real !== false ? $root_real : ROOT_PATH;
     $subpath = '';
+    $resolved = false;
 
-    if ($doc_root && $root_dir) {
-        $doc_norm = rtrim(str_replace('\\', '/', $doc_root), '/');
-        $root_norm = rtrim(str_replace('\\', '/', $root_dir), '/');
+    if ($doc_use !== '' && $root_use !== '') {
+        $doc_norm = rtrim(str_replace('\\', '/', $doc_use), '/');
+        $root_norm = rtrim(str_replace('\\', '/', $root_use), '/');
         if ($root_norm === $doc_norm) {
             $subpath = '';
+            $resolved = true;
         } elseif (str_starts_with($root_norm, $doc_norm . '/')) {
             $subpath = '/' . trim(substr($root_norm, strlen($doc_norm)), '/');
+            $resolved = true;
+        }
+    }
+
+    if (!$resolved && !empty($_SERVER['SCRIPT_NAME'])) {
+        $script_dir = str_replace('\\', '/', dirname((string)$_SERVER['SCRIPT_NAME']));
+        $script_dir = '/' . trim($script_dir, '/');
+        if ($script_dir === '/') {
+            $subpath = '';
+        } else {
+            $feature_dirs = ['/admin', '/auth', '/katalog', '/mitra', '/perbaikan', '/reservasi'];
+            foreach ($feature_dirs as $fd) {
+                if ($script_dir === $fd) {
+                    $subpath = '';
+                    $resolved = true;
+                    break;
+                }
+                if (str_ends_with($script_dir, $fd)) {
+                    $subpath = rtrim(substr($script_dir, 0, -strlen($fd)), '/');
+                    $resolved = true;
+                    break;
+                }
+            }
+            if (!$resolved) {
+                $subpath = $script_dir;
+            }
         }
     }
 

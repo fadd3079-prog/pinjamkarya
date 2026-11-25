@@ -28,7 +28,9 @@ if ($id_alat <= 0) {
 
 $alat = pk_stmt_one(
     $conn,
-    "SELECT a.*, k.nama_kategori, k.panduan_keselamatan
+    "SELECT a.*, k.nama_kategori,
+            a.panduan_keselamatan AS panduan_alat,
+            k.panduan_keselamatan AS panduan_kategori
      FROM aset_alat a
      JOIN kategori_alat k ON a.id_kategori = k.id_kategori
      WHERE a.id_alat = ? LIMIT 1",
@@ -41,6 +43,8 @@ if (empty($alat) || in_array($alat['status_alat'], ['Menunggu Verifikasi', 'Pera
     header('Location: ' . BASE_URL . '/katalog/index.php');
     exit;
 }
+
+$panduan_info = pk_get_panduan_keselamatan($alat);
 
 $min_skor     = (int)$alat['min_skor'];
 $max_hari     = (int)$alat['max_hari_pinjam'];
@@ -186,8 +190,8 @@ require_once ROOT_PATH . '/includes/header.php';
             <?= render_kontak_fields_if_needed($warga, $_POST, !$skor_cukup) ?>
 
             <div class="form-group">
-                <label class="form-label">Panduan Keselamatan (<?= e($alat['nama_kategori']) ?>)</label>
-                <div class="pk-guideline-box mb-3"><?= e($alat['panduan_keselamatan']) ?></div>
+                <label class="form-label">Panduan Keselamatan (<?= e($panduan_info['is_khusus'] ? $alat['nama_alat'] : $alat['nama_kategori']) ?>)</label>
+                <div class="pk-guideline-box mb-3"><?= e($panduan_info['teks']) ?></div>
 
                 <div class="form-check">
                     <input type="checkbox" id="setuju_panduan" name="setuju_panduan" value="1" class="form-check-input" required <?= !$skor_cukup ? 'disabled' : '' ?>>

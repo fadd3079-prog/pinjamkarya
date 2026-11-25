@@ -280,9 +280,20 @@ document.addEventListener('DOMContentLoaded', function () {
     updateDateConstraints();
   }
 
-  /* ---------- Custom accessible select ---------- */
+  /* ---------- Custom accessible select + custom date-range picker ---------- */
   const customSelects = [];
+  const customDateRanges = [];
   let selectUid = 0;
+
+  function closeAllDateRanges(exceptWrap) {
+    for (let i = 0; i < customDateRanges.length; i += 1) {
+      const item = customDateRanges[i];
+      if (item.wrap !== exceptWrap && item.wrap.classList.contains('is-open')) {
+        item.wrap.classList.remove('is-open');
+        item.trigger.setAttribute('aria-expanded', 'false');
+      }
+    }
+  }
 
   function closeAllSelects(exceptWrap) {
     for (let i = 0; i < customSelects.length; i += 1) {
@@ -452,6 +463,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function openMenu() {
       if (trigger.disabled) return;
       closeAllSelects(wrap);
+      closeAllDateRanges(null);
       wrap.classList.remove('pk-select--up');
       const rect = trigger.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
@@ -512,9 +524,305 @@ document.addEventListener('DOMContentLoaded', function () {
     customSelects.push({ wrap: wrap, trigger: trigger, menu: menu });
   });
 
+  /* ---------- Custom interactive date-range picker ---------- */
+  const BULAN_ID = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  const BULAN_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+  const HARI_HEAD = ['Sn', 'Sl', 'Rb', 'Km', 'Jm', 'Sb', 'Mg'];
+
+  function toIsoDate(y, m, d) {
+    return String(y) + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+  }
+
+  function parseIsoDate(iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || '').trim());
+    if (!m) return null;
+    return { y: Number(m[1]), m: Number(m[2]) - 1, d: Number(m[3]) };
+  }
+
+  function formatShortDate(iso) {
+    const p = parseIsoDate(iso);
+    if (!p) return '';
+    return String(p.d).padStart(2, '0') + ' ' + BULAN_SHORT[p.m];
+  }
+
+  function formatRangeText(startIso, endIso) {
+    if (!startIso && !endIso) return '';
+    if (startIso && !endIso) return formatShortDate(startIso);
+    const s = parseIsoDate(startIso);
+    const e = parseIsoDate(endIso);
+    if (!s || !e) return '';
+    if (startIso === endIso) return String(s.d).padStart(2, '0') + ' ' + BULAN_SHORT[s.m] + ' ' + s.y;
+    if (s.y === e.y && s.m === e.m) {
+      return String(s.d).padStart(2, '0') + ' – ' + String(e.d).padStart(2, '0') + ' ' + BULAN_SHORT[e.m];
+    }
+    return formatShortDate(startIso) + ' – ' + formatShortDate(endIso);
+  }
+
+  document.querySelectorAll('[data-pk-daterange]').forEach(function (wrap) {
+    const startInput = wrap.querySelector('input[name="tgl_mulai"]');
+    const endInput = wrap.querySelector('input[name="tgl_selesai"]');
+    const trigger = wrap.querySelector('.pk-daterange-trigger');
+    const labelEl = wrap.querySelector('.pk-daterange-label');
+    const menu = wrap.querySelector('.pk-datepicker-menu');
+    if (!startInput || !endInput || !trigger || !labelEl || !menu) return;
+
+    const now = new Date();
+    const todayIso = toIsoDate(now.getFullYear(), now.getMonth(), now.getDate());
+    const minIso = wrap.getAttribute('data-min') || todayIso;
+    const minParsed = parseIsoDate(minIso) || { y: now.getFullYear(), m: now.getMonth(), d: now.getDate() };
+
+    let appliedStart = startInput.value || '';
+    let appliedEnd = endInput.value || '';
+    let draftStart = appliedStart;
+    let draftEnd = appliedEnd;
+    let hoverIso = '';
+
+    const initParsed = parseIsoDate(draftStart) || minParsed;
+    let viewY = initParsed.y;
+    let viewM = initParsed.m;
+
+    function syncTriggerLabel() {
+      const text = formatRangeText(startInput.value, endInput.value);
+      const isMobile = window.innerWidth < 640;
+      const fallback = isMobile
+        ? (wrap.getAttribute('data-mobile-placeholder') || 'Cek ketersediaan tanggal')
+        : (wrap.getAttribute('data-placeholder') || 'Pilih Tanggal');
+      labelEl.textContent = text || fallback;
+      trigger.classList.toggle('has-value', Boolean(text));
+    }
+
+    function submitParentForm() {
+      const form = wrap.closest('form');
+      if (!form) return;
+      if (typeof form.requestSubmit === 'function') {
+        form.requestSubmit();
+      } else {
+        form.submit();
+      }
+    }
+
+    function renderCalendar() {
+      menu.innerHTML = '';
+
+      const head = document.createElement('div');
+      head.className = 'pk-dp-head';
+
+      const prevBtn = document.createElement('button');
+      prevBtn.type = 'button';
+      prevBtn.className = 'pk-dp-nav';
+      prevBtn.setAttribute('aria-label', 'Bulan sebelumnya');
+      prevBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3.5L5.5 8 10 12.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      const atMinMonth = viewY < minParsed.y || (viewY === minParsed.y && viewM <= minParsed.m);
+      prevBtn.disabled = atMinMonth;
+      prevBtn.addEventListener('click', function () {
+        if (viewM === 0) {
+          viewY -= 1;
+          viewM = 11;
+        } else {
+          viewM -= 1;
+        }
+        renderCalendar();
+      });
+
+      const title = document.createElement('div');
+      title.className = 'pk-dp-title';
+      title.textContent = BULAN_ID[viewM] + ' ' + viewY;
+
+      const nextBtn = document.createElement('button');
+      nextBtn.type = 'button';
+      nextBtn.className = 'pk-dp-nav';
+      nextBtn.setAttribute('aria-label', 'Bulan berikutnya');
+      nextBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 3.5L10.5 8 6 12.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      nextBtn.addEventListener('click', function () {
+        if (viewM === 11) {
+          viewY += 1;
+          viewM = 0;
+        } else {
+          viewM += 1;
+        }
+        renderCalendar();
+      });
+
+      head.appendChild(prevBtn);
+      head.appendChild(title);
+      head.appendChild(nextBtn);
+      menu.appendChild(head);
+
+      const weekdays = document.createElement('div');
+      weekdays.className = 'pk-dp-weekdays';
+      HARI_HEAD.forEach(function (w) {
+        const cell = document.createElement('span');
+        cell.textContent = w;
+        weekdays.appendChild(cell);
+      });
+      menu.appendChild(weekdays);
+
+      const grid = document.createElement('div');
+      grid.className = 'pk-dp-days';
+
+      const firstJsDay = new Date(viewY, viewM, 1).getDay();
+      const offset = (firstJsDay + 6) % 7;
+      for (let i = 0; i < offset; i += 1) {
+        const spacer = document.createElement('span');
+        spacer.className = 'pk-dp-spacer';
+        grid.appendChild(spacer);
+      }
+
+      const daysInMonth = new Date(viewY, viewM + 1, 0).getDate();
+      const rangeEndPreview = draftEnd || (draftStart && hoverIso >= draftStart ? hoverIso : '');
+
+      for (let day = 1; day <= daysInMonth; day += 1) {
+        const iso = toIsoDate(viewY, viewM, day);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'pk-dp-day';
+        btn.textContent = String(day);
+        btn.setAttribute('aria-label', String(day) + ' ' + BULAN_ID[viewM] + ' ' + viewY);
+
+        if (iso < minIso) {
+          btn.disabled = true;
+        }
+        if (iso === todayIso) {
+          btn.classList.add('is-today');
+        }
+        if (draftStart && iso === draftStart) {
+          btn.classList.add('is-range-start');
+        }
+        if (rangeEndPreview && iso === rangeEndPreview) {
+          btn.classList.add(draftEnd ? 'is-range-end' : 'is-preview-end');
+        }
+        if (draftStart && rangeEndPreview && iso > draftStart && iso < rangeEndPreview) {
+          btn.classList.add('is-in-range');
+        }
+
+        btn.addEventListener('mouseenter', function () {
+          if (draftStart && !draftEnd && iso >= draftStart) {
+            hoverIso = iso;
+            const prevs = grid.querySelectorAll('.pk-dp-day');
+            prevs.forEach(function (cellBtn, idx) {
+              const cellIso = toIsoDate(viewY, viewM, idx + 1);
+              cellBtn.classList.toggle('is-preview-end', cellIso === hoverIso);
+              cellBtn.classList.toggle('is-in-range', cellIso > draftStart && cellIso < hoverIso);
+            });
+          }
+        });
+
+        btn.addEventListener('click', function () {
+          if (iso < minIso) return;
+          if (!draftStart || (draftStart && draftEnd) || iso < draftStart) {
+            draftStart = iso;
+            draftEnd = '';
+            hoverIso = '';
+          } else {
+            draftEnd = iso;
+            hoverIso = '';
+          }
+          renderCalendar();
+        });
+
+        grid.appendChild(btn);
+      }
+      menu.appendChild(grid);
+
+      const statusLine = document.createElement('div');
+      statusLine.className = 'pk-dp-status';
+      if (!draftStart) {
+        statusLine.textContent = 'Pilih tanggal mulai pinjam';
+      } else if (!draftEnd) {
+        statusLine.textContent = 'Mulai ' + formatShortDate(draftStart) + ' — pilih tanggal selesai';
+      } else {
+        const sp = parseIsoDate(draftStart);
+        const ep = parseIsoDate(draftEnd);
+        const totalDays = Math.round((new Date(ep.y, ep.m, ep.d) - new Date(sp.y, sp.m, sp.d)) / 86400000) + 1;
+        statusLine.textContent = formatRangeText(draftStart, draftEnd) + ' (' + totalDays + ' hari)';
+      }
+      menu.appendChild(statusLine);
+
+      const foot = document.createElement('div');
+      foot.className = 'pk-dp-foot';
+
+      const clearBtn = document.createElement('button');
+      clearBtn.type = 'button';
+      clearBtn.className = 'btn btn-muted pk-dp-clear';
+      clearBtn.textContent = 'Hapus';
+      clearBtn.disabled = !draftStart && !appliedStart;
+      clearBtn.addEventListener('click', function () {
+        const hadApplied = Boolean(appliedStart || appliedEnd);
+        draftStart = '';
+        draftEnd = '';
+        hoverIso = '';
+        startInput.value = '';
+        endInput.value = '';
+        appliedStart = '';
+        appliedEnd = '';
+        syncTriggerLabel();
+        closeAllDateRanges(null);
+        if (hadApplied) {
+          submitParentForm();
+        } else {
+          renderCalendar();
+        }
+      });
+
+      const applyBtn = document.createElement('button');
+      applyBtn.type = 'button';
+      applyBtn.className = 'btn btn-primary pk-dp-apply';
+      applyBtn.textContent = 'Terapkan Jadwal';
+      applyBtn.disabled = !draftStart;
+      applyBtn.addEventListener('click', function () {
+        if (!draftStart) return;
+        const finalEnd = draftEnd || draftStart;
+        startInput.value = draftStart;
+        endInput.value = finalEnd;
+        appliedStart = draftStart;
+        appliedEnd = finalEnd;
+        syncTriggerLabel();
+        closeAllDateRanges(null);
+        submitParentForm();
+      });
+
+      foot.appendChild(clearBtn);
+      foot.appendChild(applyBtn);
+      menu.appendChild(foot);
+    }
+
+    function openDateMenu() {
+      closeAllSelects(null);
+      closeAllDateRanges(wrap);
+      draftStart = startInput.value || '';
+      draftEnd = endInput.value || '';
+      hoverIso = '';
+      const p = parseIsoDate(draftStart) || minParsed;
+      viewY = p.y;
+      viewM = p.m;
+      renderCalendar();
+      wrap.classList.add('is-open');
+      trigger.setAttribute('aria-expanded', 'true');
+    }
+
+    trigger.addEventListener('click', function () {
+      if (wrap.classList.contains('is-open')) {
+        closeAllDateRanges(null);
+      } else {
+        openDateMenu();
+      }
+    });
+
+    menu.addEventListener('click', function (e) {
+      e.stopPropagation();
+    });
+
+    window.addEventListener('resize', syncTriggerLabel);
+    syncTriggerLabel();
+    customDateRanges.push({ wrap: wrap, trigger: trigger, menu: menu });
+  });
+
   document.addEventListener('click', function (e) {
     if (!e.target.closest('.pk-select')) {
       closeAllSelects(null);
+    }
+    if (!e.target.closest('.pk-daterange')) {
+      closeAllDateRanges(null);
     }
   });
 
@@ -522,6 +830,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (e.key === 'Escape') {
       closeAllDrawers();
       closeAllSelects(null);
+      closeAllDateRanges(null);
     }
   });
 });

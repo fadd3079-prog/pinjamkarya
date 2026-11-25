@@ -593,7 +593,7 @@ function get_gambar_alat_info(?string $filename, string $label = 'Perkakas Komun
             $h = is_array($info) && !empty($info[1]) ? (int)$info[1] : 400;
             $ratio = $w > 0 ? round($h / $w, 4) : 0.625;
             return [
-                'url'    => BASE_URL . '/assets/uploads/alat/' . rawurlencode($clean),
+                'url'    => BASE_URL . '/assets/uploads/alat/' . rawurlencode($clean) . '?v=' . filemtime($full_path),
                 'width'  => $w,
                 'height' => $h,
                 'ratio'  => $ratio > 0 ? $ratio : 0.625,
@@ -718,6 +718,26 @@ function badge_status_alat(string $status): string {
         'Perawatan'           => 'pk-badge--warning',
         'Menunggu Verifikasi' => 'pk-badge--danger',
     ]);
+}
+
+/**
+ * Merender satu badge status ketersediaan unit secara profesional untuk halaman katalog & detail publik.
+ *
+ * @param string $status     Status unit di database ('Tersedia', 'Dipinjam', 'Perawatan', 'Menunggu Verifikasi').
+ * @param bool   $is_bentrok Penanda jadwal unit bentrok pada rentang tanggal filter warga.
+ * @return string Markup HTML badge status katalog.
+ */
+function badge_status_katalog(string $status, bool $is_bentrok = false): string {
+    if ($status === 'Dipinjam') {
+        return '<span class="pk-badge pk-badge--primary">Sedang Dipinjam</span>';
+    }
+    if ($status === 'Perawatan') {
+        return '<span class="pk-badge pk-badge--warning">Sedang Diperbaiki</span>';
+    }
+    if ($status !== 'Tersedia' || $is_bentrok) {
+        return '<span class="pk-badge pk-badge--danger">Tidak Tersedia</span>';
+    }
+    return '<span class="pk-badge pk-badge--success">Tersedia</span>';
 }
 
 /**
@@ -896,8 +916,12 @@ function render_tool_card(array $alat, string $detail_url, string $heading_tag =
     $is_free = (float)($alat['biaya_perawatan'] ?? 0) <= 0;
     $biaya = $is_free ? 'Gratis' : rupiah((float)$alat['biaya_perawatan']);
     $status_alat = (string)($alat['status_alat'] ?? 'Tersedia');
-    $is_unavailable = !empty($alat['is_unavailable']) || ($status_alat !== 'Tersedia');
+    $is_bentrok = !empty($alat['is_bentrok']);
+    $is_unavailable = !empty($alat['is_unavailable']) || $is_bentrok || ($status_alat !== 'Tersedia');
     $img_info = get_gambar_alat_info($alat['foto_alat'] ?? '', $alat['nama_alat'] ?? '');
+    $aria_status = $status_alat === 'Dipinjam'
+        ? 'Sedang Dipinjam'
+        : ($status_alat === 'Perawatan' ? 'Sedang Diperbaiki' : ($is_unavailable ? 'Tidak Tersedia' : 'Tersedia'));
 
     ob_start();
     ?>
@@ -909,14 +933,7 @@ function render_tool_card(array $alat, string $detail_url, string $heading_tag =
              height="<?= (int)$img_info['height'] ?>"
              loading="lazy">
         <div class="pk-tool-status">
-            <?php if ($is_unavailable): ?>
-                <span class="pk-badge pk-badge--unavailable">Tidak Tersedia</span>
-                <?php if ($status_alat !== 'Tersedia'): ?>
-                    <?= badge_status_alat($status_alat) ?>
-                <?php endif; ?>
-            <?php else: ?>
-                <?= badge_status_alat($status_alat) ?>
-            <?php endif; ?>
+            <?= badge_status_katalog($status_alat, $is_unavailable && $status_alat === 'Tersedia') ?>
         </div>
     </div>
 
@@ -929,7 +946,7 @@ function render_tool_card(array $alat, string $detail_url, string $heading_tag =
         </div>
     </div>
 
-    <a href="<?= e($detail_url) ?>" class="pk-tool-hit" aria-label="<?= e(($alat['nama_alat'] ?? '') . ' - ' . ($is_unavailable ? 'Tidak Tersedia (' . $status_alat . ')' : $status_alat)) ?>"></a>
+    <a href="<?= e($detail_url) ?>" class="pk-tool-hit" aria-label="<?= e(($alat['nama_alat'] ?? '') . ' - ' . $aria_status) ?>"></a>
 </article>
     <?php
     return ob_get_clean();
@@ -1304,6 +1321,23 @@ function google_mark_svg(int $size = 16): string {
          . '<path d="M6.3 13.76A6 6 0 0 1 6 12c0-.61.11-1.2.3-1.76V7.6H2.89A10 10 0 0 0 2 12c0 1.61.39 3.14 1.07 4.4l3.23-2.64z"/>'
          . '<path d="M12 6.04c1.5 0 2.84.51 3.9 1.52l2.92-2.92C17.05 2.99 14.75 2 12 2A10 10 0 0 0 2.89 7.6l3.41 2.64c.8-2.41 3.05-4.2 5.7-4.2z"/>'
          . '</svg>';
+}
+
+/**
+ * Menentukan teks panduan keselamatan aktif untuk sebuah alat (prioritas panduan khusus unit, fallback ke kategori).
+ *
+ * @param array $row Data baris alat yang memuat panduan_alat dan panduan_kategori.
+ * @return array{teks: string, is_khusus: bool} Panduan siap tampil beserta penanda sumbernya.
+ */
+function pk_get_panduan_keselamatan(array $row): array {
+    $khusus = trim((string)($row['panduan_alat'] ?? ''));
+    if ($khusus !== '') {
+        return ['teks' => $khusus, 'is_khusus' => true];
+    }
+    return [
+        'teks'      => trim((string)($row['panduan_kategori'] ?? '')),
+        'is_khusus' => false,
+    ];
 }
 
 /**

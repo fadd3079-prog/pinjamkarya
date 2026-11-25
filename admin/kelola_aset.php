@@ -70,15 +70,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Simpan alat baru atau perubahan data alat.
     if ($action === 'create' || $action === 'update') {
-        $id_alat          = (int)($_POST['id_alat'] ?? 0);
-        $id_kategori      = (int)($_POST['id_kategori'] ?? 0);
-        $nama_alat        = trim($_POST['nama_alat'] ?? '');
-        $deskripsi        = trim($_POST['deskripsi'] ?? '');
-        $harga_beli_baru  = (float)($_POST['harga_beli_baru'] ?? 0);
-        $biaya_perawatan  = (float)($_POST['biaya_perawatan'] ?? 0);
-        $max_hari_pinjam  = max(1, (int)($_POST['max_hari_pinjam'] ?? 3));
-        $min_skor         = max(0, (int)($_POST['min_skor'] ?? 50));
-        $status_alat      = $_POST['status_alat'] ?? 'Tersedia';
+        $id_alat             = (int)($_POST['id_alat'] ?? 0);
+        $id_kategori         = (int)($_POST['id_kategori'] ?? 0);
+        $nama_alat           = trim($_POST['nama_alat'] ?? '');
+        $deskripsi           = trim($_POST['deskripsi'] ?? '');
+        $panduan_raw         = trim($_POST['panduan_keselamatan'] ?? '');
+        $panduan_keselamatan = ($panduan_raw !== '') ? $panduan_raw : null;
+        $harga_beli_baru     = (float)($_POST['harga_beli_baru'] ?? 0);
+        $biaya_perawatan     = (float)($_POST['biaya_perawatan'] ?? 0);
+        $max_hari_pinjam     = max(1, (int)($_POST['max_hari_pinjam'] ?? 3));
+        $min_skor            = max(0, (int)($_POST['min_skor'] ?? 50));
+        $status_alat         = $_POST['status_alat'] ?? 'Tersedia';
 
         if (!in_array($status_alat, ['Menunggu Verifikasi', 'Tersedia', 'Dipinjam', 'Perawatan'], true)) {
             $status_alat = 'Tersedia';
@@ -105,14 +107,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($action === 'create') {
-            $stmt = mysqli_prepare($conn, 'INSERT INTO aset_alat (id_kategori, id_pemilik, nama_alat, deskripsi, foto_alat, harga_beli_baru, biaya_perawatan, max_hari_pinjam, min_skor, status_alat) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-            mysqli_stmt_bind_param($stmt, 'iisssddiis', $id_kategori, $admin_id, $nama_alat, $deskripsi, $foto_filename, $harga_beli_baru, $biaya_perawatan, $max_hari_pinjam, $min_skor, $status_alat);
+            $stmt = mysqli_prepare($conn, 'INSERT INTO aset_alat (id_kategori, id_pemilik, nama_alat, deskripsi, panduan_keselamatan, foto_alat, harga_beli_baru, biaya_perawatan, max_hari_pinjam, min_skor, status_alat) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+            mysqli_stmt_bind_param($stmt, 'iissssddiis', $id_kategori, $admin_id, $nama_alat, $deskripsi, $panduan_keselamatan, $foto_filename, $harga_beli_baru, $biaya_perawatan, $max_hari_pinjam, $min_skor, $status_alat);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
             set_flash('success', 'Unit perkakas baru berhasil ditambahkan.');
         } else {
-            $stmt = mysqli_prepare($conn, 'UPDATE aset_alat SET id_kategori = ?, nama_alat = ?, deskripsi = ?, foto_alat = ?, harga_beli_baru = ?, biaya_perawatan = ?, max_hari_pinjam = ?, min_skor = ?, status_alat = ? WHERE id_alat = ?');
-            mysqli_stmt_bind_param($stmt, 'isssddiisi', $id_kategori, $nama_alat, $deskripsi, $foto_filename, $harga_beli_baru, $biaya_perawatan, $max_hari_pinjam, $min_skor, $status_alat, $id_alat);
+            $stmt = mysqli_prepare($conn, 'UPDATE aset_alat SET id_kategori = ?, nama_alat = ?, deskripsi = ?, panduan_keselamatan = ?, foto_alat = ?, harga_beli_baru = ?, biaya_perawatan = ?, max_hari_pinjam = ?, min_skor = ?, status_alat = ? WHERE id_alat = ?');
+            mysqli_stmt_bind_param($stmt, 'issssddiisi', $id_kategori, $nama_alat, $deskripsi, $panduan_keselamatan, $foto_filename, $harga_beli_baru, $biaya_perawatan, $max_hari_pinjam, $min_skor, $status_alat, $id_alat);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
             set_flash('success', 'Data alat berhasil diperbarui.');
@@ -329,6 +331,11 @@ require_once ROOT_PATH . '/includes/header.php';
                     <label for="foto_alat" class="form-label">Foto Alat (Opsional, maks. 2 MB)</label>
                     <input type="file" id="foto_alat" name="foto_alat" class="form-control" accept=".jpg,.jpeg,.png,.webp">
                 </div>
+            </div>
+
+            <div class="form-group">
+                <label for="panduan_keselamatan" class="form-label">Panduan Keselamatan Khusus Alat (Opsional)</label>
+                <textarea id="panduan_keselamatan" name="panduan_keselamatan" class="form-control" rows="4" placeholder="Kosongkan agar unit otomatis memakai Panduan Umum Kategori."><?= e($form_val['panduan_keselamatan'] ?? '') ?></textarea>
             </div>
 
             <button type="submit" class="btn btn-primary w-100">

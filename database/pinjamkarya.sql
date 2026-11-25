@@ -42,6 +42,7 @@ CREATE TABLE aset_alat (
     id_pemilik INT NOT NULL,
     nama_alat VARCHAR(150) NOT NULL,
     deskripsi TEXT NOT NULL,
+    panduan_keselamatan TEXT NULL DEFAULT NULL,
     foto_alat VARCHAR(255) NOT NULL DEFAULT 'default_alat.jpg',
     harga_beli_baru DECIMAL(12,2) NOT NULL DEFAULT 0.00,
     biaya_perawatan DECIMAL(12,2) NOT NULL DEFAULT 0.00,
@@ -116,17 +117,17 @@ INSERT INTO users (id_user, nama, email, password, no_hp, alamat, role, is_kontr
 (5, 'Siti Aminah (Warga Skor Rendah)', 'siti@pinjamkarya.id', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '081234567805', 'Karangklesem, Purwokerto Selatan', 'warga', 0, 0, 0, 65);
 
 INSERT INTO kategori_alat (id_kategori, nama_kategori, panduan_keselamatan, rata_rata_berat_kg, estimasi_harga_baru) VALUES
-(1, 'Pertukangan & Konstruksi', '1. Gunakan kacamata pelindung dan sarung tangan kerja.\n2. Periksa kondisi kabel sebelum mencolokkan ke stopkontak.\n3. Jangan gunakan di area basah atau tergenang air.', 3.50, 650000.00),
-(2, 'Peralatan Produksi UMKM', '1. Bersihkan sisa bahan makanan/produksi segera setelah pemakaian.\n2. Pastikan pengaturan suhu/daya sesuai kapasitas listrik rumah.\n3. Simpan kembali di tempat kering.', 6.20, 1450000.00),
-(3, 'Alat Bantu Kesehatan', '1. Lakukan disinfeksi permukaan menggunakan alkohol swab sebelum dan sesudah pemakaian.\n2. Kunci rem roda saat pengguna berpindah posisi.\n3. Jangan melebihi batas beban maksimal 100 kg.', 12.00, 1200000.00),
-(4, 'Elektronik Rumah Tangga', '1. Cabut steker dari sumber listrik sebelum membuka penutup komponen.\n2. Hindari beban listrik berlebih pada satu stopkontak.', 2.80, 450000.00);
+(1, 'Pertukangan & Konstruksi', '1. Periksa kondisi fisik, pengunci, atau kabel alat sebelum digunakan.\n2. Gunakan pelindung diri sesuai jenis pekerjaan (seperti sarung tangan atau kacamata kerja).\n3. Gunakan di area kerja yang stabil, aman, dan kering lalu bersihkan sebelum dikembalikan.', 3.50, 650000.00),
+(2, 'Peralatan Produksi UMKM', '1. Pastikan seluruh bagian yang bersentuhan dengan bahan dalam keadaan bersih sebelum dipakai.\n2. Gunakan alat sesuai kapasitas kerja dan daya listrik rumah yang tersedia.\n3. Bersihkan unit segera setelah selesai dan simpan kembali di tempat kering.', 6.20, 1450000.00),
+(3, 'Alat Bantu Kesehatan', '1. Bersihkan atau lap permukaan kontak menggunakan alkohol swab/tisu antiseptik sebelum dan sesudah pemakaian.\n2. Pastikan bagian penyangga, pengunci, atau sensor berfungsi normal sebelum digunakan.\n3. Gunakan sesuai petunjuk pemakaian dan simpan kembali ke dalam tas/wadah dengan rapi.', 12.00, 1200000.00),
+(4, 'Elektronik Rumah Tangga', '1. Pastikan kondisi bodi, pengisi daya, atau colokan aman sebelum digunakan.\n2. Hindari paparan air serta penggunaan melebihi kapasitas normal perangkat.\n3. Matikan daya dan pastikan perangkat bersih sebelum dikembalikan ke Hub.', 2.80, 450000.00);
 
-INSERT INTO aset_alat (id_alat, id_kategori, id_pemilik, nama_alat, deskripsi, foto_alat, harga_beli_baru, biaya_perawatan, max_hari_pinjam, min_skor, status_alat) VALUES
-(1, 1, 2, 'Mesin Bor Listrik Bosch GSB 550', 'Bor impact 550W lengkap dengan koper dan 10 mata bor tembok/besi. Cocok untuk instalasi rak atau perbaikan ringan.', 'default_alat.jpg', 680000.00, 5000.00, 3, 80, 'Tersedia'),
-(2, 1, 1, 'Tangga Lipat Aluminium 2 Meter', 'Tangga lipat ringan anti karat dengan pijakan anti selip, beban maksimal 120 kg.', 'default_alat.jpg', 550000.00, 0.00, 3, 50, 'Tersedia'),
-(3, 2, 2, 'Mesin Impulse Sealer Plastik 30cm', 'Alat perekat kemasan plastik tebal untuk pelaku UMKM kuliner/snack.', 'default_alat.jpg', 350000.00, 0.00, 5, 70, 'Tersedia'),
-(4, 3, 1, 'Kursi Roda Standar Lipat', 'Kursi roda medis rangka baja krom dengan sandaran tangan nyaman untuk kebutuhan pemulihan sementara.', 'default_alat.jpg', 1250000.00, 0.00, 7, 50, 'Tersedia'),
-(5, 2, 2, 'Hand Mixer Heavy Duty 500W', 'Mixer adonan roti/kue kapasitas sedang milik Mitra Balqis, menunggu verifikasi kelayakan fisik Admin.', 'default_alat.jpg', 1600000.00, 10000.00, 3, 90, 'Menunggu Verifikasi');
+INSERT INTO aset_alat (id_alat, id_kategori, id_pemilik, nama_alat, deskripsi, panduan_keselamatan, foto_alat, harga_beli_baru, biaya_perawatan, max_hari_pinjam, min_skor, status_alat) VALUES
+(1, 1, 2, 'Mesin Bor Listrik Bosch GSB 550', 'Bor impact 550W lengkap dengan koper dan 10 mata bor tembok/besi. Cocok untuk instalasi rak atau perbaikan ringan.', '1. Gunakan kacamata pelindung dan sarung tangan kerja saat mengebor.\n2. Periksa kondisi kabel serta pastikan mata bor terpasang kencang sebelum dinyalakan.\n3. Hindari penggunaan di area basah dan cabut steker sebelum mengganti mata bor.', 'default_alat.jpg', 680000.00, 5000.00, 3, 80, 'Tersedia'),
+(2, 1, 1, 'Tangga Lipat Aluminium 2 Meter', 'Tangga lipat ringan anti karat dengan pijakan anti selip, beban maksimal 120 kg.', '1. Pastikan engsel dan pengunci kedua kaki tangga terkunci penuh sebelum naik.\n2. Letakkan tangga di permukaan lantai yang rata, padat, dan tidak licin.\n3. Jangan melebihi beban maksimal 120 kg serta hindari menginjak anak tangga paling atas.', 'default_alat.jpg', 550000.00, 0.00, 3, 50, 'Tersedia'),
+(3, 2, 2, 'Mesin Impulse Sealer Plastik 30cm', 'Alat perekat kemasan plastik tebal untuk pelaku UMKM kuliner/snack.', '1. Atur level panas secara bertahap sesuai ketebalan plastik agar elemen tidak cepat putus.\n2. Jauhkan jari dari area pemanas (heating strip) selama pedal/tuas ditekan.\n3. Cabut kabel listrik setelah selesai dan tunggu area penyegel dingin sebelum disimpan.', 'default_alat.jpg', 350000.00, 0.00, 5, 70, 'Tersedia'),
+(4, 3, 1, 'Kursi Roda Standar Lipat', 'Kursi roda medis rangka baja krom dengan sandaran tangan nyaman untuk kebutuhan pemulihan sementara.', '1. Kunci kedua rem roda sebelum pengguna duduk atau berpindah posisi.\n2. Pastikan pijakan kaki terbuka sempurna dan rangka lipat terkunci rapat.\n3. Jangan melebihi batas beban maksimal 100 kg dan bersihkan pegangan dengan antiseptik.', 'default_alat.jpg', 1250000.00, 0.00, 7, 50, 'Tersedia'),
+(5, 2, 2, 'Hand Mixer Heavy Duty 500W', 'Mixer adonan roti/kue kapasitas sedang milik Mitra Balqis, menunggu verifikasi kelayakan fisik Admin.', '1. Pastikan pengaduk terpasang mengunci dan tombol kecepatan di posisi 0 sebelum mencolokkan listrik.\n2. Istirahatkan motor tiap 5 menit pemakaian adonan berat agar tidak overheat.\n3. Lepas pengaduk untuk dicuci terpisah dan jangan mencelupkan bodi mesin ke air.', 'default_alat.jpg', 1600000.00, 10000.00, 3, 90, 'Menunggu Verifikasi');
 
 INSERT INTO peminjaman (id_peminjaman, kode_booking, id_alat, id_warga, tgl_mulai, tgl_selesai, setuju_panduan, status_peminjaman) VALUES
 (1, 'PK-20261110-001', 1, 3, '2026-11-10', '2026-11-12', 1, 'Selesai'),

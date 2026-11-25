@@ -1,7 +1,7 @@
 Options -Indexes
 DirectoryIndex index.php index.html
 
-<FilesMatch "(^\.|^README\.md$|\.sql$|\.local\.php$|\.example\.php$)">
+<FilesMatch "(^\.|\.md$|\.sql$|\.zip$|\.local\.php$|\.example\.php$)">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>

@@ -1,5 +1,6 @@
 # Konfigurasi & rahasia lokal
 config/*.local.php
+database/*_infinityfree.sql
 .env
 .env.*
 !.env.example
@@ -14,6 +15,7 @@ assets/uploads/tiket/*
 *.log
 *.tmp
 *.bak
+*.zip
 *.cache
 .phpunit.result.cache
 error_log
